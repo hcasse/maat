@@ -6,13 +6,13 @@ import os.path
 import recipe
 import subprocess
 import sys
-from base import *
 
 # global variables
 top = env.top		# top directory
 all = []			# all goals
 todo = []			# goals to do
 verbose = False		# verbose mode
+do_config = False	# configuration need to be done
 
 # parse arguments
 parser = argparse.ArgumentParser(description = "ElfMake Builder")
@@ -21,27 +21,25 @@ parser.add_argument('-v',  '--verbose', action="store_true", default=False, help
 parser.add_argument('-c',  '--config', action="store_true", default=False, help="perform configuration")
 args = parser.parse_args()
 verbose = args.verbose
+do_config = args.config
 
 for a in args.free:
 	p = a.split("=", 2)
 	if len(p) == 1:
 		todo.append(a)
 	else:
-		os.environ[p[0]] = p[1]
-	
+		env.osenv.set(p[0], p[1])
 
-class ElfError(Exception):
-	"""Exception when a Make error happens."""
-	msg = None
-	
-	def __init__(self, msg):
-		self.msg = msg
-	
-	def __repr__(self):
-		return self.msg
 
-	def __str__(self):
-		return self.msg
+# global initializations
+ALL = []
+CLEAN = []
+DISTCLEAN = []
+
+
+# tools functions
+def ext_of(p):
+	return os.path.splitext(p)[1]
 
 
 def make_rec(f):
@@ -60,10 +58,8 @@ def make_rec(f):
 			update = True
 	else:
 		if f.recipe:
-			rd = os.path.getmtime(f.path)
 			for d in f.recipe.deps:
-				dd = os.path.getmtime(d.path)
-				if dd > rd:
+				if f.younger_than(d):
 					update = True
 					break
 	
@@ -74,13 +70,16 @@ def make_rec(f):
 
 def make():
 	"""Perform the real build."""
-	config.load()
-	try:
-		for a in all:
-			f = recipe.get_file(a)
-			make_rec(f)
-	except ElfError, e:
-		print "ERROR: %s" % e
+	config.load(do_config)
+	if do_config:
+		config.make()
+	else:
+		try:
+			for a in all:
+				f = recipe.get_file(a)
+				make_rec(f)
+		except ElfError, e:
+			print "ERROR: %s" % e
 
 
 def make_line(args):
@@ -89,7 +88,7 @@ def make_line(args):
 		if isinstance(a, list):
 			line = line + make_line(a)
 		else:
-			line = line + " " + str(a)
+			line = line + " " + env.to_string(a)
 	return line
 
 
@@ -101,13 +100,25 @@ def invoke(*cmd):
 	if r <> 0:
 		raise ElfError("build failed")
 
-def get(id):
-	"""Get a variable value."""
-	return env.cenv.get(id)
 
+############## environment management #############
+
+def get(id, default = None):
+	"""Get a variable value."""
+	v = env.cenv.get(id)
+	if v == None:
+		return default
+	else:
+		return v
+
+def set(id, val):
+	"""Set a variable value."""
+	env.cenv.set(id, val)
+
+def append(id, val):
+	"""Append a value to a variable."""
+	env.cenv.append(id, val)
 
 #def env(id, default = ""):
 #	"""Get environment variable value."""
 #	return os.getenv(id, default)
-
-

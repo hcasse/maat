@@ -16,6 +16,14 @@ class File(env.MapEnv):
 		self.path = path
 		file_db[path] = self
 	
+	def time(self):
+		"""Get the last update time of the file."""
+		return os.path.getmtime(self.path)
+	
+	def younger_than(self, f):
+		"""Test if the current file is younger than the given one."""
+		return self.time() < f.time()
+	
 	def __str__(self):
 		cpath = env.cenv.path
 		if self.path.startswith(cpath):
@@ -175,3 +183,19 @@ def gen(dir, rext, dep):
 
 	# return result
 	return prev
+
+
+class Goal(File):
+	"""A goal is a file that do not match real file.
+	It is always rebuilt."""
+
+	def Goal(self, path):
+		File.__init__(self, path)
+	
+	def younger_than(self, f):
+		return True
+
+
+def install_default_goals():
+	"""Install default goals."""
+	pass
