@@ -3,7 +3,7 @@ import os
 import os.path
 import sys
 
-top = os.getcwd()	# top directory
+topdir = os.getcwd()	# top directory
 
 class ElfError(Exception):
 	"""Exception when a Make error happens."""
@@ -33,7 +33,7 @@ class Env:
 	path = None
 	name = None
 	
-	def __init__(self, name, path = top):
+	def __init__(self, name, path = topdir):
 		self.name = name
 		self.path = path
 
@@ -55,7 +55,7 @@ class Env:
 class OSEnv(Env):
 	"""OS environment."""
 	
-	def __init__(self, path = top):
+	def __init__(self, path = topdir):
 		Env.__init__(self, "os", path)
 
 	def get(self, id):
@@ -116,7 +116,7 @@ class MapEnv(ParentEnv):
 
 # environment definitons
 osenv = OSEnv()
-elfenv = MapEnv("builtin", top, osenv, sys.modules["elfmake"].__dict__)
-confenv = MapEnv("config", top, elfenv)
-topenv = MapEnv("main", top, confenv, sys.modules['__main__'].__dict__)
+elfenv = MapEnv("builtin", topdir, osenv, sys.modules["elfmake"].__dict__)
+confenv = MapEnv("config", topdir, elfenv)
+topenv = MapEnv("main", topdir, confenv, sys.modules['__main__'].__dict__)
 cenv = topenv		# current environment

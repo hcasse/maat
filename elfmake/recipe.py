@@ -25,13 +25,8 @@ class File(env.MapEnv):
 		return self.time() < f.time()
 	
 	def __str__(self):
-		cpath = env.cenv.path
-		if self.path.startswith(cpath):
-			return self.path[len(cpath) + 1:]
-		elif self.path.startswith(top):
-			p = cpath[len(top):]
-			n = p.count('/')
-			return "../" * n + self.path[len(top) + 1:]
+		if self.path.startswith(env.topdir) or self.path.startswith(os.getcwd()):
+			return os.path.relpath(self.path)
 		else:
 			return self.path
 
@@ -40,11 +35,11 @@ def get_file(path):
 	"""Get the file matching the given path in the DB. Apply
 	localisation rules relative to a particular make.py if the path
 	is not absolute."""
-	path = os.path.normpath(path)
 	
 	# apply localisation rule
 	if not os.path.isabs(path):
 		path = os.path.join(env.cenv.path, path)
+	path = os.path.normpath(path)
 	
 	# find the file
 	if file_db.has_key(path):
@@ -72,13 +67,20 @@ class Recipe:
 	ress = None
 	deps = None
 	env = None
+	cwd = None
 
 	def __init__(self, ress, deps = None):
-		self.ress = get_files(ress)
-		self.deps = get_files(deps)
-		for f in self.ress:
+		ress = get_files(ress)
+		deps = get_files(deps)
+		self.ress = ress
+		self.deps = deps
+		for f in ress:
 			f.recipe = self
 		self.env = env.cenv
+		if hasattr(ress[0], 'cwd'):
+			self.cwd = ress[0].cwd
+		else:
+			self.cwd = self.env.path
 
 	def action(self):
 		"""Execute the receipe."""
@@ -199,28 +201,9 @@ class Goal(File):
 		return True
 
 
-def goal(goal, deps):
-	"""Build a goal with the following dependencies."""
-
-	# look for an existing goal
-	path = os.path.join(env.cenv.path, goal)
-	try:
-		file = file_db[path]
-		if not isinstance(file, Goal):
-			raise env.ElfError("a goal already named '%s' already exist!" % goal)
-		elif file.recipe:
-			file.recipe.deps.append(deps)
-			return
-	except KeyError, e:
-		file = Goal(path)
-	
-	# make the recipe
-	file.recipe = Recipe(goal, deps)
-	
-
-def install_default_goals():
-	"""Install default goals."""
-	path = os.path.join(env.cenv.path, "all")
-	if not file_db.has_key(path):
-		goal("all", env.cenv.get("ALL"))
-	
+def fix(path):
+	"""Fix a path according to the current directory."""
+	if isinstance(path, list):
+		return [str(get_file(p)) for p in path]
+	else:
+		return str(get_file(path))

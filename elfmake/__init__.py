@@ -7,13 +7,42 @@ import imp
 import os
 import os.path
 import recipe
+import std
 import sys
 
 # global variables
-top = env.top		# top directory
+topdir = env.topdir	# top directory
 todo = []			# goals to do
 verbose = False		# verbose mode
 do_config = False	# configuration need to be done
+IS_WINDOWS = sys.platform in ['win32', 'win64', 'cygwin']
+IS_UNIX = not IS_WINDOWS
+
+
+# environment management
+curenv = None			# current environment
+curdir = None			# current directory
+envstack = []
+
+def set_env(e):
+	global curenv
+	global curdir
+	env.cenv = e
+	curenv = e
+	curdir = e.path
+	os.chdir(e.path)
+	
+def push_env(env):
+	"""Push a new environment."""
+	envstack.append(curenv)
+	set_env(env)
+
+def pop_env():
+	"""Pop the top environment."""
+	set_env(envstack.pop())
+
+set_env(env.cenv)
+
 
 # parse arguments
 parser = argparse.ArgumentParser(description = "ElfMake Builder")
@@ -32,17 +61,7 @@ for a in args.free:
 		env.osenv.set(p[0], p[1])
 
 
-# global initializations
-ALL = []
-CLEAN = []
-DISTCLEAN = []
-
-
-# tools functions
-def ext_of(p):
-	return os.path.splitext(p)[1]
-
-
+# make process
 def make_rec(f):
 	
 	# apply dependencies
@@ -66,12 +85,10 @@ def make_rec(f):
 	
 	# if needed, perform update
 	if update:
-		penv = env.cenv
-		env.cenv = f.recipe.env
-		os.chdir(env.cenv.path)
+		push_env(f.recipe.env)
+		os.chdir(f.recipe.cwd)
 		f.recipe.action()
-		env.cenv = penv
-		os.chdir(env.cenv.path)
+		pop_env()
 		
 
 def make():
@@ -90,7 +107,7 @@ def make():
 	
 	# build action
 	else:
-		recipe.install_default_goals()
+		std.install_default_goals()
 		try:
 			global todo
 			if not todo:
@@ -125,17 +142,24 @@ def append(id, val):
 
 def subdir(dir):
 	"""Process a make.py in a subdirectory."""
-	dpath = os.path.join(env.cenv.path, dir)
+	
+	# look for existence of make.py
+	dpath = os.path.normpath(os.path.join(env.cenv.path, dir))
 	path = os.path.join(dpath, "make.py")
 	if not os.access(path, os.R_OK):
 		raise env.ElfError("no 'make.py' in %s" % path)
-	penv = env.cenv
-	name = penv.name + "_" + dir
-	env.cenv = env.MapEnv(name, dpath, penv)
+		
+	# push new environment
+	name = (curenv.name + "_" + dir).replace(".", "_")
+	push_env(env.MapEnv(name, dpath, curenv))
+	
+	# load make.py
 	mod = imp.load_source(name, path)
 	env.cenv.map = mod.__dict__
-	env.cenv = penv
 	
+	# pop new environment
+	pop_env()
+
 
 ########## shortcut to recipe ###########
 
@@ -157,7 +181,7 @@ def fun(f):
 	return action.FunAction(cmd)
 
 
-######## useful functions ##########
+######## file system functions ##########
 
 def join(a1, a2):
 	return os.path.join(a1, a2)
@@ -165,5 +189,26 @@ def join(a1, a2):
 def isdir(path):
 	return os.path.isdir(path)
 
-def listdir(path):
+def listdir(path = None):
+	if not path:
+		path = env.cenv.path
 	return os.listdir(path)
+
+def file(p):
+	return recipe.get_file(p)
+
+def path(p):
+	return recipe.get_file(p).path
+
+def paths(ps):
+	return [path(p) for p in ps]
+
+def ext_of(p):
+	return os.path.splitext(p)[1]
+
+def fix(p):
+	return recipe.fix(p)
+
+def cwd():
+	return env.cenv.path
+

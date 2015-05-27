@@ -2,6 +2,7 @@
 the recipes."""
 
 import env
+import os
 import recipe
 import subprocess
 
@@ -68,6 +69,8 @@ class FunAction(Action):
 
 
 def make_actions(*actions):
+	if not actions:
+		return Action()
 	result = []
 	for action in actions:
 		if isinstance(action, list):
@@ -77,7 +80,7 @@ def make_actions(*actions):
 		else:
 			result.append(ShellAction(str(action)))
 	if len(result) == 1:
-		return result[1]
+		return result[0]
 	else:
 		return GroupAction(result)
 
@@ -88,13 +91,33 @@ class ActionRecipe(recipe.Recipe):
 	
 	def __init__(self, ress, deps, action):
 		recipe.Recipe.__init__(self, ress, deps)
-		self.act = action
+		self.act = make_actions(action)
 	
 	def action(self):
-		self.act.execute(self.ress, self.deps)
+		if self.act:
+			self.act.execute(self.ress, self.deps)
 
 
 def rule(ress, deps, *actions):
 	"""Build a rule with actions."""
 	ActionRecipe(ress, deps, make_actions(actions))
+
+
+def goal(goal, deps, actions = Action()):
+	"""Build a goal with the following dependencies."""
+
+	# look for an existing goal
+	path = os.path.join(env.cenv.path, goal)
+	try:
+		file = recipe.file_db[path]
+		if not isinstance(file, Goal):
+			raise env.ElfError("a goal already named '%s' already exist!" % goal)
+		elif file.recipe:
+			file.recipe.deps.append(deps)
+			return
+	except KeyError, e:
+		file = recipe.Goal(path)
+	
+	# make the recipe
+	file.recipe = ActionRecipe(goal, deps, actions)
 

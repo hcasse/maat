@@ -16,9 +16,32 @@ In addition, it is using the following variables from the current environment:
   * VERSION -- project version.
 """
 
+import elfmake.action as action
+import elfmake.env as env
+import elfmake.recipe as recipe
+import os.path
+
 ALL = []
 CLEAN = []
 DISTCLEAN = []
 INSTALL_PROGRAMS = []
 INSTALL_LIBS = []
 INSTALL_DATA = []
+
+def install_default_goals():
+	"""Install default goals."""
+	
+	# install all
+	path = os.path.join(env.cenv.path, "all")
+	if not recipe.file_db.has_key(path):
+		action.goal("all", ALL)
+
+	# install clean
+	path = os.path.join(env.cenv.path, "clean")
+	if not recipe.file_db.has_key(path):
+		action.goal("clean", [], "rm -rf " + " ".join(recipe.fix(CLEAN)))
+
+	# install distclean
+	path = os.path.join(env.cenv.path, "distclean")
+	if not recipe.file_db.has_key(path):
+		action.goal("distclean", ["clean"], "rm -rf " + " ".join(recipe.fix(DISTCLEAN)))

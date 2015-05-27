@@ -3,6 +3,7 @@ from elfmake import *
 import elfmake as base
 import elfmake.recipe as recipe
 import elfmake.action as action
+import elfmake.std as std
 
 need_c = False
 need_cxx = False
@@ -20,6 +21,8 @@ recipe.FunGen(".o", ".c", comp_c_to_o)
 
 
 def program(name, sources):
+	if IS_WINDOWS:
+		name = name + ".exe"
 	
 	# C++ program?
 	cxx = False
@@ -39,9 +42,9 @@ def program(name, sources):
 	r = recipe.FunRecipe(link_program, [name], objs)
 	
 	# record it
-	base.ALL.append(r.ress[0].path)
-	base.CLEAN = base.CLEAN + objs
-	base.DISTCLEAN.append(r.ress[0].path)
+	std.ALL.append(r.ress[0].path)
+	std.CLEAN = std.CLEAN + [path(obj) for obj in objs]
+	std.DISTCLEAN.append(r.ress[0].path)
 
 
 def configure():
