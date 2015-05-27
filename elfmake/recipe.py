@@ -40,6 +40,7 @@ def get_file(path):
 	"""Get the file matching the given path in the DB. Apply
 	localisation rules relative to a particular make.py if the path
 	is not absolute."""
+	path = os.path.normpath(path)
 	
 	# apply localisation rule
 	if not os.path.isabs(path):
@@ -70,12 +71,14 @@ class Recipe:
 	"""A recipe to build files."""
 	ress = None
 	deps = None
+	env = None
 
 	def __init__(self, ress, deps = None):
 		self.ress = get_files(ress)
 		self.deps = get_files(deps)
 		for f in self.ress:
 			f.recipe = self
+		self.env = env.cenv
 
 	def action(self):
 		"""Execute the receipe."""
@@ -169,7 +172,7 @@ def gen(dir, rext, dep):
 	
 	# initialize lookup process
 	if not ext_db.has_key(dext):
-		raise ElfError("don't know how to build '%s' from '%s'" % (rext, dep))
+		raise env.ElfError("don't know how to build '%s' from '%s'" % (rext, dep))
 	ext = ext_db[dext]
 	prev = dep
 	
@@ -196,6 +199,28 @@ class Goal(File):
 		return True
 
 
+def goal(goal, deps):
+	"""Build a goal with the following dependencies."""
+
+	# look for an existing goal
+	path = os.path.join(env.cenv.path, goal)
+	try:
+		file = file_db[path]
+		if not isinstance(file, Goal):
+			raise env.ElfError("a goal already named '%s' already exist!" % goal)
+		elif file.recipe:
+			file.recipe.deps.append(deps)
+			return
+	except KeyError, e:
+		file = Goal(path)
+	
+	# make the recipe
+	file.recipe = Recipe(goal, deps)
+	
+
 def install_default_goals():
 	"""Install default goals."""
-	pass
+	path = os.path.join(env.cenv.path, "all")
+	if not file_db.has_key(path):
+		goal("all", env.cenv.get("ALL"))
+	

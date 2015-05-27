@@ -1,15 +1,16 @@
+"""Main module of ElfMake, a python-based build system."""
+import action
 import argparse
 import config
 import env
+import imp
 import os
 import os.path
 import recipe
-import subprocess
 import sys
 
 # global variables
 top = env.top		# top directory
-all = []			# all goals
 todo = []			# goals to do
 verbose = False		# verbose mode
 do_config = False	# configuration need to be done
@@ -53,7 +54,7 @@ def make_rec(f):
 	update = False
 	if not os.path.exists(f.path):
 		if not f.recipe:
-			raise ElfError("file '%s' does not exist and no recipe is able to build it" % f.path)
+			raise env.ElfError("file '%s' does not exist and no recipe is able to build it" % f.path)
 		else:
 			update = True
 	else:
@@ -65,40 +66,40 @@ def make_rec(f):
 	
 	# if needed, perform update
 	if update:
+		penv = env.cenv
+		env.cenv = f.recipe.env
+		os.chdir(env.cenv.path)
 		f.recipe.action()
-
+		env.cenv = penv
+		os.chdir(env.cenv.path)
+		
 
 def make():
 	"""Perform the real build."""
+	
+	# are we at the top make.py?
+	if env.cenv <> env.topenv:
+		return
+	
+	# load configuration
 	config.load(do_config)
+	
+	# configuration action
 	if do_config:
 		config.make()
+	
+	# build action
 	else:
+		recipe.install_default_goals()
 		try:
-			for a in all:
+			global todo
+			if not todo:
+				todo = ["all"]
+			for a in todo:
 				f = recipe.get_file(a)
 				make_rec(f)
-		except ElfError, e:
+		except env.ElfError, e:
 			print "ERROR: %s" % e
-
-
-def make_line(args):
-	line = ""
-	for a in args:
-		if isinstance(a, list):
-			line = line + make_line(a)
-		else:
-			line = line + " " + env.to_string(a)
-	return line
-
-
-def invoke(*cmd):
-	"""Launch the given command in the current shell."""
-	line = make_line(cmd)
-	print line
-	r = subprocess.call(line, shell=True)
-	if r <> 0:
-		raise ElfError("build failed")
 
 
 ############## environment management #############
@@ -111,14 +112,58 @@ def get(id, default = None):
 	else:
 		return v
 
+
 def set(id, val):
 	"""Set a variable value."""
 	env.cenv.set(id, val)
+
 
 def append(id, val):
 	"""Append a value to a variable."""
 	env.cenv.append(id, val)
 
-#def env(id, default = ""):
-#	"""Get environment variable value."""
-#	return os.getenv(id, default)
+
+def subdir(dir):
+	"""Process a make.py in a subdirectory."""
+	dpath = os.path.join(env.cenv.path, dir)
+	path = os.path.join(dpath, "make.py")
+	if not os.access(path, os.R_OK):
+		raise env.ElfError("no 'make.py' in %s" % path)
+	penv = env.cenv
+	name = penv.name + "_" + dir
+	env.cenv = env.MapEnv(name, dpath, penv)
+	mod = imp.load_source(name, path)
+	env.cenv.map = mod.__dict__
+	env.cenv = penv
+	
+
+########## shortcut to recipe ###########
+
+def goal(goal, deps):
+	"""Define a goal that does not match an actual file.
+	Making the goal executes always its action."""
+	return recipe.goal(goal, deps)
+
+def rule(ress, deps, *actions):
+	"""Build a custom rule with actions."""
+	return action.rule(ress, deps, actions)
+
+def shell(cmd):
+	"""Build a shell action."""
+	return action.ShellAction(cmd)
+
+def fun(f):
+	"""Build a function action."""
+	return action.FunAction(cmd)
+
+
+######## useful functions ##########
+
+def join(a1, a2):
+	return os.path.join(a1, a2)
+
+def isdir(path):
+	return os.path.isdir(path)
+
+def listdir(path):
+	return os.listdir(path)
