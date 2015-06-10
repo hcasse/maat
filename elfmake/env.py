@@ -120,3 +120,6 @@ elfenv = MapEnv("builtin", topdir, osenv, sys.modules["elfmake"].__dict__)
 confenv = MapEnv("config", topdir, elfenv)
 topenv = MapEnv("main", topdir, confenv, sys.modules['__main__'].__dict__)
 cenv = topenv		# current environment
+
+
+

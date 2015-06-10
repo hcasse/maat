@@ -11,11 +11,11 @@ cpp_ext = [".cpp", ".cxx", ".C"]
 c_comps = ["gcc", "cc"]
 cxx_comps = ["g++", "c++"] 
 
-def comp_c_to_o(ress, deps):
-	action.invoke(get("CC", "cc"), get("CFLAGS"), "-o", ress[0], "-c", deps[0])
+def comp_c_to_o(ress, deps, ctx):
+	action.invoke([get("CC", "cc"), get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
 
-def link_program(ress, deps):
-	action.invoke(get("CC", "cc"), get("CFLAGS"), "-o", ress[0], deps, get("LDFLAGS"))
+def link_program(ress, deps, ctx):
+	action.invoke([get("CC", "cc"), get("CFLAGS"), "-o", ress[0], deps, get("LDFLAGS")], ctx)
 
 recipe.FunGen(".o", ".c", comp_c_to_o)
 
@@ -51,6 +51,6 @@ def configure():
 	if need_c:
 		config.find_program("C compiler", "CC", ["gcc", "cc"])
 	if need_cxx:
-		config.find_program("C++ compilaer", "CXX", ["g++", "c++"])
+		config.find_program("C++ compiler", "CXX", ["g++", "c++"])
 	
 config.register("c", configure)

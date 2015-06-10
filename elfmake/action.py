@@ -3,12 +3,15 @@ the recipes."""
 
 import env
 import os
+import re
 import recipe
+import select
 import subprocess
-
 
 def make_line(args):
 	line = ""
+	if isinstance(args, str):
+		return args
 	for a in args:
 		if isinstance(a, list):
 			line = line + make_line(a)
@@ -16,11 +19,30 @@ def make_line(args):
 			line = line + " " + env.to_string(a)
 	return line
 
-def invoke(*cmd):
+def invoke(cmd, ctx):
 	"""Launch the given command in the current shell."""
+
+	# print command
 	line = make_line(cmd)
-	print line
-	r = subprocess.call(line, shell=True)
+	ctx.cmd.write(line)
+	
+	# prepare process
+	proc = subprocess.Popen(line, shell=True, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+	
+	# prepare handling if out, err
+	map = { proc.stdout: ctx.out, proc.stderr: ctx.err }
+	ins = [proc.stdout, proc.stderr]
+	while ins:
+		useds, x, y = select.select(ins, [], [])
+		for used in useds:
+			line = used.read()
+			if line:
+				map[used].write(line)
+			else:
+				ins.remove(used)
+	
+	# wait end of called process
+	r = proc.wait()
 	if r <> 0:
 		raise env.ElfError("build failed")
 
@@ -28,21 +50,31 @@ def invoke(*cmd):
 class Action:
 	"""Base class of all actions."""
 	
-	def execute(self, ress, deps):
+	def execute(self, ress, deps, ctx):
 		"""Perform the action. If an action fails, raise env.ElfError exception.
 		It takes as parameter the list of results and the list of dependencies."""
 		pass
 
 
 class ShellAction(Action):
-	"""An action that invokes a shell command."""
+	"""An action that invokes a shell command.
+	Action starting with '@' will not be displayed."""
 	cmd = None
+	quiet = False
 	
 	def __init__(self, cmd):
 		self.cmd = cmd
+		if cmd and cmd[0] == "@":
+			self.quiet = True
+			self.cmd = cmd[1:]
 
-	def execute(self, ress, deps):
-		invoke(self.cmd)
+	def execute(self, ress, deps, ctx):
+		if self.quiet:
+			save = ctx.cmd
+			ctx.cmd = recipe.null_stream
+		invoke(self.cmd, ctx)
+		if self.quiet:
+			ctx.cmd = save
 
 
 class GroupAction(Action):
@@ -52,9 +84,9 @@ class GroupAction(Action):
 	def __init__(self, actions):
 		self.actions = actions
 	
-	def execute(self, ress, deps):
+	def execute(self, ress, deps, ctx):
 		for action in self.actions:
-			action.execute(ress, deps)
+			action.execute(ress, deps, ctx)
 
 
 class FunAction(Action):
@@ -64,8 +96,8 @@ class FunAction(Action):
 	def __init__(self, fun):
 		self.fun = fun
 	
-	def execute(self, ress, deps):
-		fun(ress, deps)
+	def execute(self, ress, deps, ctx):
+		fun(ress, deps, ctx)
 
 
 def make_actions(*actions):
@@ -73,8 +105,9 @@ def make_actions(*actions):
 		return Action()
 	result = []
 	for action in actions:
-		if isinstance(action, list):
-			result = result + action
+		if isinstance(action, list) or isinstance(action, tuple):
+			for subaction in action:
+				result.append(make_actions(subaction))
 		elif isinstance(action, Action):
 			result.append(action)
 		else:
@@ -85,6 +118,36 @@ def make_actions(*actions):
 		return GroupAction(result)
 
 
+class GrepStream:
+	"""Stream that keeps only lines that match a regular expression."""
+	exp = None
+	out = None
+	
+	def __init__(self, exp, out):
+		self.exp = re.compile(exp)
+		self.out = out
+	
+	def write(self, line):
+		if self.exp.search(line):
+			self.out.write(line)
+		
+
+class GrepAction(Action):
+	"""Action that performs a grep on command output."""
+	exp = None
+	cmd = None
+	
+	def __init__(self, exp, cmd):
+		self.exp = exp
+		self.cmd = make_actions(cmd)
+
+	def execute(self, ress, deps, ctx):
+		save = ctx.out
+		ctx.out = GrepStream(self.exp, save)
+		self.cmd.execute(ress, deps, ctx)
+		ctx.out = save
+
+
 class ActionRecipe(recipe.Recipe):
 	"""A recipe that supports an action. object for generation."""
 	act = None
@@ -93,9 +156,9 @@ class ActionRecipe(recipe.Recipe):
 		recipe.Recipe.__init__(self, ress, deps)
 		self.act = make_actions(action)
 	
-	def action(self):
+	def action(self, ctx):
 		if self.act:
-			self.act.execute(self.ress, self.deps)
+			self.act.execute(self.ress, self.deps, ctx)
 
 
 def rule(ress, deps, *actions):

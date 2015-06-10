@@ -2,10 +2,60 @@
 import env
 import os
 import os.path
+import sys
 
 file_db = { }		# file database
 ext_db = { }		# extension database
 
+# ANSI coloration
+NORMAL = "\033[0m"
+BOLD = "\033[1m"
+FAINT = "\033[2m"
+ITALIC = "\033[3m"
+UNDERLINE = "\033[4m"
+BLACK = "\033[30m"
+RED = "\033[31m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+BLUE = "\033[34m"
+MAGENTA = "\033[35m"
+CYAN = "\033[36m"
+WHITE = "\033[37m"
+BACK_BLACK = "\033[40m"
+BACK_RED = "\033[41m"
+BACK_GREEN = "\033[42m"
+BACK_YELLOW = "\033[43m"
+BACK_BLUE = "\033[44m"
+BACK_MAGENTA = "\033[45m"
+BACK_CYAN = "\033[46m"
+BACK_WHITE = "\033[47m"
+
+
+# execution context
+class CommandPrinter:
+	"""Base class for printing commands."""
+	
+	def write(self, cmd):
+		sys.stdout.write((BOLD + BLUE + "%s" + NORMAL + "\n") % cmd)
+
+class NullStream:
+	"""Stream that prints nothings."""
+	
+	def write(self, line):
+		pass
+
+
+command_stream = CommandPrinter()
+null_stream = NullStream()
+
+class Context:
+	"""A context is used to configure the execution of an action."""
+	cmd = command_stream
+	out = sys.stdout
+	err = sys.stderr
+
+
+# base classes
 class File(env.MapEnv):
 	"""Representation of files."""
 	path = None
@@ -82,7 +132,7 @@ class Recipe:
 		else:
 			self.cwd = self.env.path
 
-	def action(self):
+	def action(self, ctx):
 		"""Execute the receipe."""
 		pass
 
@@ -95,8 +145,8 @@ class FunRecipe(Recipe):
 		Recipe.__init__(self, ress, deps)
 		self.fun = fun
 
-	def action(self):
-		self.fun(self.ress, self.deps)
+	def action(self, ctx):
+		self.fun(self.ress, self.deps, ctx)
 
 
 class Ext:
@@ -207,3 +257,6 @@ def fix(path):
 		return [str(get_file(p)) for p in path]
 	else:
 		return str(get_file(path))
+
+	
+	

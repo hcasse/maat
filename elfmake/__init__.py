@@ -87,7 +87,7 @@ def make_rec(f):
 	if update:
 		push_env(f.recipe.env)
 		os.chdir(f.recipe.cwd)
-		f.recipe.action()
+		f.recipe.action(recipe.Context())
 		pop_env()
 		
 
@@ -117,6 +117,8 @@ def make():
 				make_rec(f)
 		except env.ElfError, e:
 			print "ERROR: %s" % e
+		except KeyboardInterrupt, e:
+			print "\nERROR: action interrupted by user!"
 
 
 ############## environment management #############
@@ -163,10 +165,10 @@ def subdir(dir):
 
 ########## shortcut to recipe ###########
 
-def goal(goal, deps):
+def goal(goal, deps, actions = None):
 	"""Define a goal that does not match an actual file.
 	Making the goal executes always its action."""
-	return recipe.goal(goal, deps)
+	return action.goal(goal, deps, actions)
 
 def rule(ress, deps, *actions):
 	"""Build a custom rule with actions."""
@@ -212,3 +214,5 @@ def fix(p):
 def cwd():
 	return env.cenv.path
 
+def grep(re, *cmd):
+	return action.GrepAction(re, cmd)
