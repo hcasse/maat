@@ -1,0 +1,158 @@
+@use dokuwiki
+@TITLE=ElfMake Manual
+@AUTHORS=H. Cassé <hugues.casse@laposte.net>
+@VERSION=0.1
+@LANG=en_EN
+
+====== Introduction ======
+
+ElfMake is the result of my frustation in the use of GnuMake,
+CMake and AutoTools. There are lots of alternatives tools (particularly
+for GnuMake) like Scons, AAP, Ant, etc but they don't maintain
+the brilliant of recipes (also known as rules).
+
+A recipe is formed of three components:
+  * the target files that the products of the rule,
+  * the dependency files that the targets are build from,
+  * the action that performs the build of the target from the dependencies.
+
+The concept is very simple: if the targets are older than the depedencies,
+the action is executed and must build the target files using the dependency files.
+Such a simple is very beautiful because it's enough to represent most building
+process of most applications including executables, static and dynamic libraries
+and anything where exists transforming program on files. But most alternatives
+to GnuMake dropped such a treasure.
+
+Yet, GnuMake (and its ancestors) has two main drawbacks:
+  * unefficient solving process of generic recipes causing combinatory explosion of file lookup,
+  * inadequate script layer that makes the task of building automatically recipes exceedingly hard and non-modular.
+
+ElfMake try to solve both problems while keeping the concept of generic recipes.
+The first issue is solved by reducing the domain of lookup for automatic recipes:
+only dependency strings between a source file and its final object are considereed.
+The second issue is simply achieved using Python as the script system.
+Fortunately, Python alone is not enough and ElfMake provides lots of common facilities
+to create and control recipes.
+
+About building systems like CMake or BuildTools, the integration inside
+ElfMake comes from the easy statement that there is no reason to separate
+building configuration and building itself. Moreover, the building scripts,
+where programs and sources are defined, have a better knowledge of what is
+done and therefore can identify which are the requirements for building
+the application.
+
+
+====== Simple Recipe ======
+
+===== Hello, World! =====
+
+Let's start with the very classic "Hello, World" example. With your
+prefered editor, create a file named ''hello.c'' and enter its content:
+
+<code c>
+#include <stdio.h>
+
+int main(void) {
+	puts("Hello, World!");
+	return 0;
+}
+</code>
+
+Our goal is to generate an executable for our program. With ElfMake,
+just create a new file named ''make.py'' with the following content:
+
+<code py>
+from elfmake import *
+from elfmake import c
+
+c.program("hello", ["hello.c"])
+
+make()
+</code>
+
+To launch the building of the program, just type:
+<code sh>
+> python make.py
+</code>
+
+The following output will appear meaning that the building is successful:
+<code>
+ cc  -o hello.o -c hello.c
+ cc  -o hello hello.o 
+</code>
+
+As no error is displayed, compulation is successful and you can test your first program:
+<code>
+>./hello
+Hello, World!
+</code>
+
+Now, you can modify your source ''hello.c'' or add new source file to your program,
+you have just to invoke ''python make.py'' to get your program re-compiled and,
+of course, only the modified sources are re-compiled. But you make things
+a bit more automatic. Add in front of ''make.py'' the line:
+
+<code py>
+#!/usr/bin/python
+</code>
+
+And make this file executable:
+<code>
+chmod +x make.py
+</code>
+
+Then, the make process is simply restarted by:
+<code sh>
+> ./make.py
+</code>
+
+
+===== Goals =====
+
+Previous section has exposed how ElfMake is able to build C program.
+This is a default behaviour but, in the standard configuration, ElfMake
+can perform several tasks, also named //goals//:
+  * ''all'' is the default applied goal and build what is required,
+  * ''clean'' removes all temporaries files like object files,
+  * ''distclean'' removes all produced files, i.e., object and executable files,
+  * ''install'' performs the installation of files in the system, i.e. installation of ''hello'' in ''/usr/bin''.
+
+To invoke a specific goal, just pass it as an argument in the command line:
+<code sh>
+> ./make.py clean
+</code>
+
+ElfMake represents the building process of an application as set of rules
+made of three components (//targets//, //dependencies//, //actions//).
+A rule means that, to build the //targets// files, we need first
+the //dependencies// file and that the action //actions// (usually shell commands)
+have to be performed. This allows creating a hierarchy between the different
+actions to build the program and to only construct targets whose dependencies
+changed.
+
+The ''all'' goal belongs in fact to a rule whose dependencies are the set
+of program to build. There is no action. When the ''all'' goal is invoked,
+automatically all its dependencies, the programs, are built. But you may
+also ask for the building of a program by specifying in the command line:
+<code sh>
+> ./make.py hello
+</code> 
+
+
+===== Customizing the compilation =====
+
+
+====== Environment Management ======
+
+
+====== Configuration ======
+
+
+====== Basic Commands ======
+
+
+====== Standard Environment ======
+
+
+====== Standard Modules ======
+

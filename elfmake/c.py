@@ -23,6 +23,7 @@ recipe.FunGen(".o", ".c", comp_c_to_o)
 def program(name, sources):
 	if IS_WINDOWS:
 		name = name + ".exe"
+	name = env.Path(name)
 	
 	# C++ program?
 	cxx = False
@@ -38,7 +39,7 @@ def program(name, sources):
 		need_c = True
 	
 	# build recipe
-	objs = [recipe.gen(os.path.dirname(name), ".o", s) for s in sources]
+	objs = [recipe.gen(name.parent(), ".o", s) for s in sources]
 	r = recipe.FunRecipe(link_program, [name], objs)
 	
 	# record it

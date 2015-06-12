@@ -3,8 +3,6 @@ import os
 import os.path
 import sys
 
-topdir = os.getcwd()	# top directory
-
 class ElfError(Exception):
 	"""Exception when a Make error happens."""
 	msg = None
@@ -28,6 +26,67 @@ def to_string(v):
 	else:
 		return str(v)
 
+
+# path mangement
+class Path:
+	"""Base class of objects representing files.
+	Mainly defined by its path. Provide several facilities like "/"
+	overload."""
+	path = None
+	
+	def __init__(self, path):
+		if isinstance(path, Path):
+			self.path = path.path
+		else:
+			self.path = path
+	
+	def __div__(self, arg):
+		return Path(os.path.join(self.path, str(arg)))
+	
+	def __str__(self):
+		return self.path
+	
+	def exists(self):
+		"""Test if the file matching the path exists."""
+		return os.path.exists(self.path)
+
+	def get_mod_time(self):
+		return os.path.getmtime(self.path)
+		
+	def prefixed_by(self, path):
+		return self.path.startswith(str(path))
+
+	def relative_to_cur(self):
+		return Path(os.path.relpath(self.path))
+
+	def norm(self):
+		"""Build a normalized of version of current path."""
+		return Path(os.path.normpath(self.path))
+
+	def set_cur(self):
+		"""Set this directory as the current directory."""
+		os.chdir(self.path)
+	
+	def is_dir(self):
+		"""Test if the path is a directory."""
+		return os.path.isdir(self.path)
+	
+	def can_read(self):
+		"""Test if the path design a file/directory that can be read."""
+		return os.access(self.path, os.R_OK)
+
+	def parent(self):
+		"""Get the parent directory of the current directory."""
+		return os.path.dirname(self.path)
+
+topdir = Path(os.getcwd())	# top directory
+
+def curdir():
+	"""Get the current working directory."""
+	return Path(os.getcwd())
+
+
+# environments
 class Env:
 	"""Base class of environments."""
 	path = None
@@ -38,7 +97,7 @@ class Env:
 		self.path = path
 
 	def get(self, id):
-		"""Get en identifier looking in the current environment
+		"""Get an identifier looking in the current environment
 		or in the parent environment."""
 		return None
 	
@@ -120,6 +179,3 @@ elfenv = MapEnv("builtin", topdir, osenv, sys.modules["elfmake"].__dict__)
 confenv = MapEnv("config", topdir, elfenv)
 topenv = MapEnv("main", topdir, confenv, sys.modules['__main__'].__dict__)
 cenv = topenv		# current environment
-
-
-

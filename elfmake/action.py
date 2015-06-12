@@ -24,7 +24,7 @@ def invoke(cmd, ctx):
 
 	# print command
 	line = make_line(cmd)
-	ctx.cmd.write(line)
+	ctx.print_command(line)
 	
 	# prepare process
 	proc = subprocess.Popen(line, shell=True, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
@@ -70,11 +70,11 @@ class ShellAction(Action):
 
 	def execute(self, ress, deps, ctx):
 		if self.quiet:
-			save = ctx.cmd
-			ctx.cmd = recipe.null_stream
+			save = ctx.command_ena
+			ctx.command_ena = False
 		invoke(self.cmd, ctx)
 		if self.quiet:
-			ctx.cmd = save
+			ctx.command_ena = save
 
 
 class GroupAction(Action):
@@ -170,17 +170,12 @@ def goal(goal, deps, actions = Action()):
 	"""Build a goal with the following dependencies."""
 
 	# look for an existing goal
-	path = os.path.join(env.cenv.path, goal)
-	try:
-		file = recipe.file_db[path]
-		if not isinstance(file, Goal):
-			raise env.ElfError("a goal already named '%s' already exist!" % goal)
-		elif file.recipe:
-			file.recipe.deps.append(deps)
-			return
-	except KeyError, e:
-		file = recipe.Goal(path)
-	
-	# make the recipe
-	file.recipe = ActionRecipe(goal, deps, actions)
+	path = env.Path(env.cenv.path) / goal
+	file = recipe.get_file(str(path))
+	if file.recipe:
+		raise env.ElfError("a goal already named '%s' already exist!" % goal)
+	else:
+		file.is_goal = True
+		file.recipe = ActionRecipe(goal, deps, actions)
+		return
 

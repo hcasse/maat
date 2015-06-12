@@ -4,6 +4,7 @@ import argparse
 import config
 import env
 import imp
+import io
 import os
 import os.path
 import recipe
@@ -30,7 +31,7 @@ def set_env(e):
 	env.cenv = e
 	curenv = e
 	curdir = e.path
-	os.chdir(e.path)
+	e.path.set_cur()
 	
 def push_env(env):
 	"""Push a new environment."""
@@ -62,7 +63,7 @@ for a in args.free:
 
 
 # make process
-def make_rec(f):
+def make_rec(f, ctx = io.Context()):
 	
 	# apply dependencies
 	if f.recipe:
@@ -71,7 +72,7 @@ def make_rec(f):
 		
 	# need update?
 	update = False
-	if not os.path.exists(f.path):
+	if not f.path.exists():
 		if not f.recipe:
 			raise env.ElfError("file '%s' does not exist and no recipe is able to build it" % f.path)
 		else:
@@ -86,12 +87,13 @@ def make_rec(f):
 	# if needed, perform update
 	if update:
 		push_env(f.recipe.env)
-		os.chdir(f.recipe.cwd)
-		f.recipe.action(recipe.Context())
+		env.Path(f.recipe.cwd).set_cur()
+		ctx.print_info("Making %s" % f)
+		f.recipe.action(ctx)
 		pop_env()
 		
 
-def make():
+def make(ctx = io.Context()):
 	"""Perform the real build."""
 	
 	# are we at the top make.py?
@@ -116,9 +118,11 @@ def make():
 				f = recipe.get_file(a)
 				make_rec(f)
 		except env.ElfError, e:
-			print "ERROR: %s" % e
+			ctx.print_error(e)
 		except KeyboardInterrupt, e:
-			print "\nERROR: action interrupted by user!"
+			sys.stderr.write("\n")
+			ctx.print_error("action interrupted by user!")
+		ctx.print_success("all is fine!");
 
 
 ############## environment management #############
@@ -146,9 +150,9 @@ def subdir(dir):
 	"""Process a make.py in a subdirectory."""
 	
 	# look for existence of make.py
-	dpath = os.path.normpath(os.path.join(env.cenv.path, dir))
-	path = os.path.join(dpath, "make.py")
-	if not os.access(path, os.R_OK):
+	dpath = (env.cenv.path / dir).norm()
+	path = dpath / "make.py"
+	if not path.can_read():
 		raise env.ElfError("no 'make.py' in %s" % path)
 		
 	# push new environment
@@ -156,7 +160,7 @@ def subdir(dir):
 	push_env(env.MapEnv(name, dpath, curenv))
 	
 	# load make.py
-	mod = imp.load_source(name, path)
+	mod = imp.load_source(name, str(path))
 	env.cenv.map = mod.__dict__
 	
 	# pop new environment
@@ -186,7 +190,7 @@ def fun(f):
 ######## file system functions ##########
 
 def join(a1, a2):
-	return os.path.join(a1, a2)
+	return env.Path(a1) / a2
 
 def isdir(path):
 	return os.path.isdir(path)

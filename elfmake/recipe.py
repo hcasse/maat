@@ -7,76 +7,39 @@ import sys
 file_db = { }		# file database
 ext_db = { }		# extension database
 
-# ANSI coloration
-NORMAL = "\033[0m"
-BOLD = "\033[1m"
-FAINT = "\033[2m"
-ITALIC = "\033[3m"
-UNDERLINE = "\033[4m"
-BLACK = "\033[30m"
-RED = "\033[31m"
-GREEN = "\033[32m"
-YELLOW = "\033[33m"
-BLUE = "\033[34m"
-MAGENTA = "\033[35m"
-CYAN = "\033[36m"
-WHITE = "\033[37m"
-BACK_BLACK = "\033[40m"
-BACK_RED = "\033[41m"
-BACK_GREEN = "\033[42m"
-BACK_YELLOW = "\033[43m"
-BACK_BLUE = "\033[44m"
-BACK_MAGENTA = "\033[45m"
-BACK_CYAN = "\033[46m"
-BACK_WHITE = "\033[47m"
-
-
-# execution context
-class CommandPrinter:
-	"""Base class for printing commands."""
-	
-	def write(self, cmd):
-		sys.stdout.write((BOLD + BLUE + "%s" + NORMAL + "\n") % cmd)
-
-class NullStream:
-	"""Stream that prints nothings."""
-	
-	def write(self, line):
-		pass
-
-
-command_stream = CommandPrinter()
-null_stream = NullStream()
-
-class Context:
-	"""A context is used to configure the execution of an action."""
-	cmd = command_stream
-	out = sys.stdout
-	err = sys.stderr
-
 
 # base classes
 class File(env.MapEnv):
 	"""Representation of files."""
 	path = None
 	recipe = None
+	is_goal = False
 	
 	def __init__(self, path):
 		env.MapEnv.__init__(self, env.cenv.path, env.cenv)
 		self.path = path
-		file_db[path] = self
+		file_db[str(path)] = self
+
+	def __div__(self, arg):
+		return self.path / str(arg)
 	
 	def time(self):
 		"""Get the last update time of the file."""
-		return os.path.getmtime(self.path)
+		if self.is_goal:
+			return 0
+		else:
+			return self.path.get_mod_time()
 	
 	def younger_than(self, f):
 		"""Test if the current file is younger than the given one."""
-		return self.time() < f.time()
+		if self.is_goal:
+			return True
+		else:
+			return self.time() < f.time()
 	
 	def __str__(self):
-		if self.path.startswith(env.topdir) or self.path.startswith(os.getcwd()):
-			return os.path.relpath(self.path)
+		if self.path.prefixed_by(env.topdir) or self.path.prefixed_by(env.curdir()):
+			return str(self.path.relative_to_cur())
 		else:
 			return self.path
 
@@ -87,13 +50,15 @@ def get_file(path):
 	is not absolute."""
 	
 	# apply localisation rule
-	if not os.path.isabs(path):
-		path = os.path.join(env.cenv.path, path)
-	path = os.path.normpath(path)
+	if not os.path.isabs(str(path)):
+		path = env.cenv.path / path
+	else:
+		path = env.Path(path)
+	path = path.norm()
 	
 	# find the file
-	if file_db.has_key(path):
-		return file_db[path]
+	if file_db.has_key(str(path)):
+		return file_db[str(path)]
 	else:
 		return File(path)
 
@@ -107,7 +72,7 @@ def get_files(paths):
 	r = []
 	for p in paths:
 		if not isinstance(p, File):
-			p = get_file(str(p))
+			p = get_file(p)
 		r.append(p)
 	return r
 
@@ -238,17 +203,6 @@ def gen(dir, rext, dep):
 
 	# return result
 	return prev
-
-
-class Goal(File):
-	"""A goal is a file that do not match real file.
-	It is always rebuilt."""
-
-	def Goal(self, path):
-		File.__init__(self, path)
-	
-	def younger_than(self, f):
-		return True
 
 
 def fix(path):

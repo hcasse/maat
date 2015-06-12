@@ -23,11 +23,11 @@ def load(do_config):
 	
 	do_config informs it is a load for configuration and
 	therefore do not alert user for incompatibility."""
-	cpath = os.path.join(env.topdir, "config.py")
-	if os.path.exists(cpath):
+	cpath = env.topdir / "config.py"
+	if cpath.exists():
 		
 		# load the configuration
-		mod = imp.load_source('config.py', cpath)
+		mod = imp.load_source('config.py', str(cpath))
 		env.confenv.map = mod.__dict__
 		
 		# check host compatibility
