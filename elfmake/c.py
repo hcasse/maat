@@ -21,7 +21,7 @@ recipe.FunGen(".o", ".c", comp_c_to_o)
 
 
 def program(name, sources):
-	if IS_WINDOWS:
+	if get("IS_WINDOWS"):
 		name = name + ".exe"
 	name = env.Path(name)
 	
@@ -44,7 +44,7 @@ def program(name, sources):
 	
 	# record it
 	std.ALL.append(r.ress[0].path)
-	std.CLEAN = std.CLEAN + [path(obj) for obj in objs]
+	std.CLEAN = std.CLEAN + [file(obj) for obj in objs]
 	std.DISTCLEAN.append(r.ress[0].path)
 
 

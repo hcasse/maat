@@ -1,0 +1,28 @@
+====== ElfMake ======
+
+===== About =====
+
+ElfMake a Python-based Make replacement. For more details, see 
+documentation in doc/ directory. To get the documentation in HTML,
+ensure you have thot.py utility and type:
+<code sh>
+> ./make.py
+> xdg-open doc/manual.html
+</code>
+
+===== Installation =====
+
+To install elfmake, just:
+<code sh>
+> ./setup.py install
+</code>
+
+To perform a local installation (in user directory):
+<code sh>
+> ./setup.py install --user
+</code>
+
+===== License =====
+
+ElfMake is delivered under GPL v3 license (see COPYRIGHT file)
+and copyright of Hugues Cassé <hugues.casse@laposte.net>.

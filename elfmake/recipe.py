@@ -181,12 +181,17 @@ def gen(dir, rext, dep):
 	"""Generate recipes to build res. A generation string is found between
 	file src and res. Each intermediate file has for name the kernel of res
 	(generated files will be put in the res directory). """
+	dir = env.Path(dir)
+	dep = env.Path(dep)
 	
 	# prepare the kernel
-	b, dext = os.path.splitext(dep)
-	_, n = os.path.split(b)
-	kern = os.path.join(dir, n)
-	
+	b = dep.get_base()
+	dext = dep.get_ext()
+	#b, dext = os.path.splitext(dep)
+	#_, n = os.path.split(b)
+	n = b.get_file()
+	kern = dir / n	#os.path.join(dir, n)
+
 	# initialize lookup process
 	if not ext_db.has_key(dext):
 		raise env.ElfError("don't know how to build '%s' from '%s'" % (rext, dep))

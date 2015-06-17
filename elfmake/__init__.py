@@ -3,26 +3,29 @@ import action
 import argparse
 import config
 import env
+import glob as pyglob
 import imp
+import inspect
 import io
 import os
-import os.path
 import recipe
+import shutil
 import std
 import sys
+
 
 # global variables
 topdir = env.topdir	# top directory
 todo = []			# goals to do
 verbose = False		# verbose mode
 do_config = False	# configuration need to be done
-IS_WINDOWS = sys.platform in ['win32', 'win64', 'cygwin']
-IS_UNIX = not IS_WINDOWS
 
 
 # environment management
 curenv = None			# current environment
+"""Current environment."""
 curdir = None			# current directory
+"""Current directory."""
 envstack = []
 
 def set_env(e):
@@ -46,32 +49,38 @@ set_env(env.cenv)
 
 
 # parse arguments
-parser = argparse.ArgumentParser(description = "ElfMake Builder")
-parser.add_argument('free', type=str, nargs='*', metavar="goal", help="goal or Definitions")
-parser.add_argument('-v',  '--verbose', action="store_true", default=False, help="verbose mode")
-parser.add_argument('-c',  '--config', action="store_true", default=False, help="perform configuration")
-args = parser.parse_args()
-verbose = args.verbose
-do_config = args.config
+if not inspect.stack()[-1][1].endswith("pydoc"):
 
-for a in args.free:
-	p = a.split("=", 2)
-	if len(p) == 1:
-		todo.append(a)
-	else:
-		env.osenv.set(p[0], p[1])
+	# parse arguments
+	parser = argparse.ArgumentParser(description = "ElfMake Builder")
+	parser.add_argument('free', type=str, nargs='*', metavar="goal", help="goal or Definitions")
+	parser.add_argument('-v',  '--verbose', action="store_true", default=False, help="verbose mode")
+	parser.add_argument('-c',  '--config', action="store_true", default=False, help="perform configuration")
+	
+	# get arguments
+	args = parser.parse_args()
+	verbose = args.verbose
+	do_config = args.config
+
+	# parse free arguments
+	for a in args.free:
+		p = a.split("=", 2)
+		if len(p) == 1:
+			todo.append(a)
+		else:
+			env.osenv.set(p[0], p[1])
 
 
 # make process
-def make_rec(f, ctx = io.Context()):
+def make_rec(f, ctx):
 	
 	# apply dependencies
 	if f.recipe:
 		for d in f.recipe.deps:
-			make_rec(d)
+			make_rec(d, ctx)
 		
 	# need update?
-	update = False
+	update = f.is_goal
 	if not f.path.exists():
 		if not f.recipe:
 			raise env.ElfError("file '%s' does not exist and no recipe is able to build it" % f.path)
@@ -109,20 +118,27 @@ def make(ctx = io.Context()):
 	
 	# build action
 	else:
+		
+		# prepare context
 		std.install_default_goals()
+		ctx = io.Context()
+		if verbose:
+			ctx.command_ena = True
+		
+		# do the build
 		try:
 			global todo
 			if not todo:
 				todo = ["all"]
 			for a in todo:
 				f = recipe.get_file(a)
-				make_rec(f)
+				make_rec(f, ctx)
+			ctx.print_success("all is fine!");
 		except env.ElfError, e:
 			ctx.print_error(e)
 		except KeyboardInterrupt, e:
 			sys.stderr.write("\n")
 			ctx.print_error("action interrupted by user!")
-		ctx.print_success("all is fine!");
 
 
 ############## environment management #############
@@ -143,11 +159,16 @@ def set(id, val):
 
 def append(id, val):
 	"""Append a value to a variable."""
-	env.cenv.append(id, val)
+	curenv.append(id, val)
 
 
 def subdir(dir):
 	"""Process a make.py in a subdirectory."""
+	
+	# avoid reflexivity
+	if curdir == dir:
+		io.DEF.print_warning("reflexive subdir ignored in %s" % curdir)
+		return
 	
 	# look for existence of make.py
 	dpath = (env.cenv.path / dir).norm()
@@ -156,7 +177,7 @@ def subdir(dir):
 		raise env.ElfError("no 'make.py' in %s" % path)
 		
 	# push new environment
-	name = (curenv.name + "_" + dir).replace(".", "_")
+	name = (curenv.name + "_" + str(dir)).replace(".", "_")
 	push_env(env.MapEnv(name, dpath, curenv))
 	
 	# load make.py
@@ -165,11 +186,12 @@ def subdir(dir):
 	
 	# pop new environment
 	pop_env()
+	return mod
 
 
 ########## shortcut to recipe ###########
 
-def goal(goal, deps, actions = None):
+def goal(goal, deps, actions = action.NULL):
 	"""Define a goal that does not match an actual file.
 	Making the goal executes always its action."""
 	return action.goal(goal, deps, actions)
@@ -190,33 +212,52 @@ def fun(f):
 ######## file system functions ##########
 
 def join(a1, a2):
+	"""Join two parts of a file path."""
 	return env.Path(a1) / a2
 
 def isdir(path):
-	return os.path.isdir(path)
+	"""Test if the given path is a directory."""
+	return env.Path(path).is_dir()
 
 def listdir(path = None):
+	"""List the content of a directory. If no argument is passed,
+	the current directory is listed."""
 	if not path:
 		path = env.cenv.path
-	return os.listdir(path)
+	return os.listdir(str(path))
 
 def file(p):
+	"""Convert a simple string to a ElfMake file."""
 	return recipe.get_file(p)
 
-def path(p):
-	return recipe.get_file(p).path
-
-def paths(ps):
-	return [path(p) for p in ps]
-
 def ext_of(p):
-	return os.path.splitext(p)[1]
+	"""Get extension of a path.
+	Deprecated: use suffix()!"""
+	return env.Path(p).get_ext()
 
-def fix(p):
-	return recipe.fix(p)
+def suffix(p):
+	"""Get extension of a path or a list of paths."""
+	if isinstance(p, list):
+		return [env.Path(x).get_ext() for x in p]
+	else:
+		return env.Path(p).get_ext()
 
-def cwd():
-	return env.cenv.path
+def path(p):
+	"""Convert simple string to ElfMake path."""
+	return env.Path(p)
 
-def grep(re, *cmd):
-	return action.GrepAction(re, cmd)
+def glob(re):
+	"""Select content of a directory from a filesystem regular expression."""
+	return pyglob.glob(re)
+
+
+# compatibility functions
+
+def grep(re, cmd, stdout = True, stderr = False):
+	"""Perform a grep on the output of the given command."""
+	return action.Grep(re, cmd, out = stdout, err = stderr)
+
+def remove(args, ignore_error = False):
+	"""Remove the given directories and files."""
+	return action.Remove(args, ignore_error)	
+

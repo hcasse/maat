@@ -1,4 +1,5 @@
 """Implementation of environment in ElfMake."""
+import glob
 import os
 import os.path
 import sys
@@ -38,11 +39,14 @@ class Path:
 		if isinstance(path, Path):
 			self.path = path.path
 		else:
-			self.path = path
+			self.path = str(path)
 	
 	def __div__(self, arg):
 		return Path(os.path.join(self.path, str(arg)))
 	
+	def __add__(self, ext):
+		return Path(self.path + ext)
+
 	def __str__(self):
 		return self.path
 	
@@ -78,6 +82,22 @@ class Path:
 	def parent(self):
 		"""Get the parent directory of the current directory."""
 		return os.path.dirname(self.path)
+	
+	def glob(self, re = "*"):
+		return glob.glob(os.path.join(self.path, re))
+
+	def get_ext(self):
+		"""Get extension of a path."""
+		return os.path.splitext(self.path)[1]
+	
+	def get_base(self):
+		"""Get the base of path, i.e., the path without extension."""
+		return Path(os.path.splitext(self.path)[0])
+	
+	def get_file(self):
+		"""Get file part of the path."""
+		return os.path.split(self.path)[1]
+
 
 topdir = Path(os.getcwd())	# top directory
 
@@ -105,9 +125,20 @@ class Env:
 		"""Set a value to an identifier in the current environment."""
 		pass
 	
+	def is_def(self, id):
+		"""Test if the identifier is defined in the current environment
+		or in one of its parents."""
+		return False
+	
 	def append(self, id, val):
 		"""Append the given value to an existing variable of the current environment
 		or pass it back to the parent environment."""
+		pass
+	
+	def append_rec(self, id, val):
+		"""Perform appending of the given value to the given id if id
+		is defined in the current environment. Pass back to parent else.
+		Return if appending has been performed, False else."""
 		pass
 
 
@@ -126,6 +157,16 @@ class OSEnv(Env):
 	def append(self, id, val):
 		self.set(id, self.get(id) + to_string(val))
 
+	def append_rec(self, id, val):
+		if self.is_def(id):
+			self.append(id, val)
+			return True
+		else:
+			return False
+	
+	def is_def(self, id):
+		return os.getenv(id) <> None
+
 
 class ParentEnv(Env):
 	"""Environment with a parent environment."""
@@ -136,10 +177,17 @@ class ParentEnv(Env):
 		self.parent = parent
 	
 	def get(self, id):
+		assert self <> self.parent
 		return self.parent.get(id)
 	
 	def append(self, id, val):
 		self.parent.append(id, val)
+
+	def append_rec(self, id, val):
+		return self.parent.append_rec(id, val)
+
+	def is_def(self, id):
+		return self.parent.is_def(id)
 
 
 class MapEnv(ParentEnv):
@@ -162,15 +210,25 @@ class MapEnv(ParentEnv):
 	def set(self, id, val):
 		self.map[id] = val
 
+	def is_def(self, id):
+		return self.map.has_key(id) or Parent.is_def(self, id)
+
 	def append(self, id, val):
-		try:
+		if not self.append_rec(id, val):
+			self.set(id, val)
+			#print "DEBUG: <%s> %s = %s" % (self, id, val)
+	
+	def append_rec(self, id, val):
+		if self.map.has_key(id):
 			old = self.get(id)
 			if isinstance(old, list):
 				old.append(val)
 			else:
 				self.set(id, old + val)
-		except KeyError, e:
-			ParentEnv.append(self, id, val)
+			return True
+		else:
+			return ParentEnv.append_rec(self, id, val)
+	
 
 
 # environment definitons

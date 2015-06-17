@@ -6,6 +6,7 @@ import os
 import re
 import recipe
 import select
+import sys
 import subprocess
 
 def make_line(args):
@@ -35,7 +36,7 @@ def invoke(cmd, ctx):
 	while ins:
 		useds, x, y = select.select(ins, [], [])
 		for used in useds:
-			line = used.read()
+			line = used.readline()
 			if line:
 				map[used].write(line)
 			else:
@@ -55,6 +56,8 @@ class Action:
 		It takes as parameter the list of results and the list of dependencies."""
 		pass
 
+NULL = Action()
+"""Null action."""
 
 class ShellAction(Action):
 	"""An action that invokes a shell command.
@@ -132,20 +135,31 @@ class GrepStream:
 			self.out.write(line)
 		
 
-class GrepAction(Action):
+class Grep(Action):
 	"""Action that performs a grep on command output."""
 	exp = None
 	cmd = None
+	out = False
+	err = False
 	
-	def __init__(self, exp, cmd):
+	def __init__(self, exp, cmd, out = True, err = False):
 		self.exp = exp
 		self.cmd = make_actions(cmd)
+		self.out = out
+		self.err = err
 
 	def execute(self, ress, deps, ctx):
-		save = ctx.out
-		ctx.out = GrepStream(self.exp, save)
+		if self.out:
+			old_out = ctx.out
+			ctx.out = GrepStream(self.exp, old_out)
+		if self.err:
+			old_err = ctx.err
+			ctx.err = GrepStream(self.exp, old_err)
 		self.cmd.execute(ress, deps, ctx)
-		ctx.out = save
+		if self.out:
+			ctx.out = old_out
+		if self.err:
+			ctx.err = old_err
 
 
 class ActionRecipe(recipe.Recipe):
@@ -161,6 +175,43 @@ class ActionRecipe(recipe.Recipe):
 			self.act.execute(self.ress, self.deps, ctx)
 
 
+class Remove(Action):
+	"""Action of remove."""
+	paths = None
+	ignore_error = None
+	
+	def __init__(self, args, ignore_error = False):
+		self.paths = [env.Path(arg) for arg in args]
+		self.ignore_error = ignore_error
+	
+	def execute(self, ress, deps, ctx):	
+		for p in self.paths:
+			try:
+				if p.is_dir():
+					shutil.rmtree(str(p))
+				else:
+					os.remove(str(p))	
+			except OSError, e:
+				if not self.ignore_error:
+					raise env.ElfError(str(e))
+
+
+class Move(Action):
+	"""Action of a moving file or directories to a specific directory."""
+	paths = None
+	target = None
+	
+	def __init__(self, paths, target):
+		self.paths = [env.Path(arg) for arg in args]
+		self.target = env.Path(target)
+	
+	def execute(self, ress, deps, ctx):	
+		try:
+			pass
+		except OSError, e:
+			raise env.ElfError(str(e))
+	
+
 def rule(ress, deps, *actions):
 	"""Build a rule with actions."""
 	ActionRecipe(ress, deps, make_actions(actions))
@@ -168,8 +219,6 @@ def rule(ress, deps, *actions):
 
 def goal(goal, deps, actions = Action()):
 	"""Build a goal with the following dependencies."""
-
-	# look for an existing goal
 	path = env.Path(env.cenv.path) / goal
 	file = recipe.get_file(str(path))
 	if file.recipe:
@@ -179,3 +228,5 @@ def goal(goal, deps, actions = Action()):
 		file.recipe = ActionRecipe(goal, deps, actions)
 		return
 
+
+	
