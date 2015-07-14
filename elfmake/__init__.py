@@ -10,6 +10,7 @@ import io
 import os
 import recipe
 import shutil
+import subprocess
 import std
 import sys
 
@@ -261,3 +262,10 @@ def remove(args, ignore_error = False):
 	"""Remove the given directories and files."""
 	return action.Remove(args, ignore_error)	
 
+def shell(cmd):
+	"""Execute a command and return its results as a string."""
+	try:
+		return subprocess.check_output(cmd, shell = True).replace('\n', ' ')
+	except subprocess.CalledProcessError, e:
+		io.DEF.print_error("error with call to '%s': %s" % (cmd, e))
+		exit(1)

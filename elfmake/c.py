@@ -14,10 +14,24 @@ cxx_comps = ["g++", "c++"]
 def comp_c_to_o(ress, deps, ctx):
 	action.invoke([get("CC", "cc"), get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
 
+def comp_cxx_to_o(ress, deps, ctx):
+	action.invoke([get("CXX", "c++"), get("CXXFLAGS"), get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
+
+def select_linker(deps):
+	for dep in deps:
+		if dep.recipe and dep.recipe.deps:
+			if dep.recipe.deps[0].path.get_ext() in cpp_ext:
+				return get("CXX", "c++")
+	return get("CC", "cc")
+
 def link_program(ress, deps, ctx):
-	action.invoke([get("CC", "cc"), get("CFLAGS"), "-o", ress[0], deps, get("LDFLAGS")], ctx)
+	action.invoke([select_linker(deps), get("CFLAGS"), get("CXXFLAGS"), "-o", ress[0], deps, get("LDFLAGS")], ctx)
 
 recipe.FunGen(".o", ".c", comp_c_to_o)
+recipe.FunGen(".o", ".cxx", comp_cxx_to_o)
+recipe.FunGen(".o", ".cpp", comp_cxx_to_o)
+recipe.FunGen(".o", ".c++", comp_cxx_to_o)
+recipe.FunGen(".o", ".C", comp_cxx_to_o)
 
 
 def program(name, sources):

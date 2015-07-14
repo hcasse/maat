@@ -1,5 +1,6 @@
 """Classes used to represent recipes."""
 import env
+import io
 import os
 import os.path
 import sys
@@ -194,7 +195,8 @@ def gen(dir, rext, dep):
 
 	# initialize lookup process
 	if not ext_db.has_key(dext):
-		raise env.ElfError("don't know how to build '%s' from '%s'" % (rext, dep))
+		io.DEF.print_error("don't know how to build '%s' from '%s'" % (rext, dep))
+		exit(1)
 	ext = ext_db[dext]
 	prev = dep
 	
