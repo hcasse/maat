@@ -11,7 +11,6 @@ import os
 import recipe
 import shutil
 import subprocess
-import std
 import sys
 
 
@@ -20,6 +19,7 @@ topdir = env.topdir	# top directory
 todo = []			# goals to do
 verbose = False		# verbose mode
 do_config = False	# configuration need to be done
+post_inits = []		# function to call just before building
 
 
 # environment management
@@ -121,7 +121,8 @@ def make(ctx = io.Context()):
 	else:
 		
 		# prepare context
-		std.install_default_goals()
+		for post in post_inits:
+			post()
 		ctx = io.Context()
 		if verbose:
 			ctx.command_ena = True

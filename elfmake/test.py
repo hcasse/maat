@@ -1,5 +1,7 @@
 """Module providing test services."""
+import elfmake
 from elfmake import action
+from elfmake import env
 from elfmake import io
 from elfmake import recipe
 import difflib
@@ -7,6 +9,8 @@ import os
 import os.path
 import shutil
 import subprocess
+
+TEST_CASES = []
 
 class Case(recipe.Recipe):
 	"""Recipe to implement test case."""
@@ -20,7 +24,9 @@ class Case(recipe.Recipe):
 		self.tests = []
 		self.name = name
 		recipe.get_file(name).is_goal = True
-	
+		global TEST_CASES
+		TEST_CASES.append(self.ress[0])
+
 	def add(self, test):
 		self.tests.append(test)
 		self.longer = max(self.longer, len(test.name))
@@ -33,7 +39,8 @@ class Case(recipe.Recipe):
 		if self.succeeded == len(self.tests):
 			ctx.out.write(io.BOLD + io.GREEN + "\tSUCCESS: all tests passed!\n" + io.NORMAL)
 		else:
-			ctx.out.write(io.BOLD + io.RED + "\tFAILURE: %d tests succeeded on %d\n" % (self.succeeded, len(self.tests)) + io.NORMAL)
+			ctx.out.write(io.BOLD + io.RED + "\tFAILURE: %d tests failed on %d\n" % (len(self.tests) - self.succeeded, len(self.tests)) + io.NORMAL)
+			raise env.ElfError("Test failed.")
 
 
 class Test(recipe.Recipe):
@@ -168,3 +175,11 @@ def output(case, name, cmd, out = None, out_ref = None, err = None, err_ref = No
 	"""Build a test that launches a command compares output."""
 	return OutputTest(case, name, cmd, out, out_ref, err, err_ref, input, deps)
 
+def post_init():
+	"""Initialize the test goal."""
+	path = env.cenv.path / "test"
+	if not recipe.file_db.has_key(path):
+		elfmake.goal("test", TEST_CASES)
+
+
+elfmake.post_inits.append(post_init)

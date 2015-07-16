@@ -46,3 +46,5 @@ def install_default_goals():
 	path = env.cenv.path / "distclean"
 	if not recipe.file_db.has_key(path):
 		elf.goal("distclean", ["clean"], elf.remove(DISTCLEAN, ignore_error = True))
+
+elf.post_inits.append(install_default_goals)
