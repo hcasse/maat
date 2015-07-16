@@ -144,6 +144,11 @@ def make(ctx = io.Context()):
 
 ############## environment management #############
 
+def defined(id):
+	"""Test if a symbol is defined."""
+	return env.cenv.is_def(id)
+
+
 def get(id, default = None):
 	"""Get a variable value."""
 	v = env.cenv.get(id)
@@ -253,6 +258,16 @@ def glob(re):
 
 
 # compatibility functions
+
+def mkdir(path):
+	"""Build a directory if not existing, building possibly intermediate
+	directories."""
+	if not os.path.isdir(path):
+		try:
+			os.makedirs(path)
+		except os.error, e:
+			io.DEF.print_error("cannot create '%s': %s" % (path, e))
+			exit(1)
 
 def grep(re, cmd, stdout = True, stderr = False):
 	"""Perform a grep on the output of the given command."""

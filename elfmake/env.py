@@ -211,7 +211,7 @@ class MapEnv(ParentEnv):
 		self.map[id] = val
 
 	def is_def(self, id):
-		return self.map.has_key(id) or Parent.is_def(self, id)
+		return self.map.has_key(id) or ParentEnv.is_def(self, id)
 
 	def append(self, id, val):
 		if not self.append_rec(id, val):
