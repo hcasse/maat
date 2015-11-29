@@ -142,6 +142,9 @@ class Env:
 		pass
 
 
+OS_SPECS = {
+	'HOME': (lambda v: Path(v)) 
+}
 class OSEnv(Env):
 	"""OS environment."""
 	
@@ -149,7 +152,11 @@ class OSEnv(Env):
 		Env.__init__(self, "os", path)
 
 	def get(self, id):
-		return os.getenv(id)
+		v = os.getenv(id)
+		if v and OS_SPECS.has_key(id):
+			return OS_SPECS[id](v)
+		else:
+			return os.getenv(id)
 	
 	def set(self, id, val):
 		os.putenv(id, to_string(val))
@@ -216,7 +223,6 @@ class MapEnv(ParentEnv):
 	def append(self, id, val):
 		if not self.append_rec(id, val):
 			self.set(id, val)
-			#print "DEBUG: <%s> %s = %s" % (self, id, val)
 	
 	def append_rec(self, id, val):
 		if self.map.has_key(id):

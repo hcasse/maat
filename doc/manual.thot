@@ -4,6 +4,8 @@
 @VERSION=0.1
 @LANG=en_EN
 
+@ELFMAKE=//ElfMake//
+
 ====== Introduction ======
 
 ElfMake is the result of my frustation in the use of GnuMake,
@@ -148,8 +150,47 @@ also ask for the building of a program by specifying in the command line:
 ====== Configuration ======
 
 
-====== Basic Commands ======
+====== Basic Commands and Variable ======
 
+''elfmake'' Python package provides basic command and variable that
+help the writing of scripts.
+
+===== Environment Management =====
+
+  * ''append''(//id//, //v//) -- append a value to an existing one.
+  * ''curenv'' -- current environment (of the current script).
+  * ''defined''(//id//) -- test if the identifier //id// is defined.
+  * ''envstack'' -- stack of environment.
+  * ''curdir'' -- current directory (of the current script).
+  * ''get''(//id// [, //def//]) -- get a value of current environment.
+  * ''pop_env''() -- pop the current environment.
+  * ''push_env''(environment) -- push a new environment.
+  * ''set''(//id//, //v//) -- set a variable in the current environment.
+  * ''subdir''(//dir//) -- process script file of the given directory.
+
+
+===== File Management =====
+
+Resources to examine files includes:
+  * ''file''(//path//) -- get ElfMake file matching the given path.
+  * ''glob''(//RE//) -- select file list using the given path regular expression.
+  * ''isdir''(//path//) -- test if given path designs a directory.
+  * ''join''(//p1//, //p2//) -- join two paths according OS rules.
+  * ''listdir''(//path//) -- build a list as the content of //path// directory.
+  * ''path''(//path//) -- convert string to path.
+  * ''suffix''(//path//) -- get extension of the file designed by the path.
+
+Actions to work on files includes:
+  * ''grep''(//RE//, //command//) -- execute given command and perform regular recognition on given output.
+  * ''mkdir''(//path//) -- create the directory of the path.
+  * ''remove''(//list//) -- remove directories and files of the list.
+
+===== Goals and Rules=====
+
+  * ''fun''(//function//) -- build an action like a call to the given function.
+  * ''goal''(//goal//, //deps//, //actions//) -- build a new goal (not matching a real file).
+  * ''rule''(//ress//, //deps//, //actions//) -- build a specific rule for a particular file.
+  * ''shell''(//commands//) -- build a a shell action.
 
 ====== Standard Environment ======
 

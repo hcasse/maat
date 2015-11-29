@@ -9,8 +9,10 @@ import os
 import os.path
 import shutil
 import subprocess
+import sys
 
 TEST_CASES = []
+NULL = open(os.devnull, "w")
 
 class Case(recipe.Recipe):
 	"""Recipe to implement test case."""
@@ -66,15 +68,18 @@ class Test(recipe.Recipe):
 		self.case.succeeded += 1
 		ctx.out.write(io.GREEN + "[OK]" + io.NORMAL + "\n")
 	
-	def failure(self, ctx):
+	def failure(self, ctx, msg = ""):
 		"""Record the current test as a failure display message."""
 		if not self.displayed:
 			self.perform(ctx)
-		ctx.out.write(io.RED + "[FAILED]" + io.NORMAL + "\n")
+		ctx.out.write(io.RED + "[FAILED]\n" + io.NORMAL)
+		if msg:
+			ctx.out.write(msg  + "\n")
 	
 	def perform(self, ctx):
 		"""Display message of a starting test."""
 		ctx.out.write("\tTesting %s%s\t" % (self.name, ' ' * (self.case.longer - len(self.name))))
+		ctx.out.flush()
 		self.displayed = True
 	
 	def info(self, ctx, msg):
@@ -107,45 +112,50 @@ class OutputTest(Test):
 	def __init__(self, case, name, cmd, out = None, out_ref = None, err = None, err_ref = None, input = None, deps = None):
 		Test.__init__(self, case, name, deps)
 		self.cmd = cmd
-		self.out = out
-		self.out_ref = out_ref
-		self.err = err
-		self.err_ref = err_ref
+		self.out = elfmake.path(out)
+		self.out_ref = elfmake.path(out_ref)
+		self.err = elfmake.path(err)
+		self.err_ref = elfmake.path(err_ref)
 		self.input = input
 	
 	def test(self, ctx):
 		self.perform(ctx)
-		displayed = True
+		#displayed = True
 		
 		# launch the command
 		if self.out:
-			out_stream = open(self.out, "w")
+			elfmake.mkdir(str(self.out.parent()))
+			out_stream = open(str(self.out), "w")
 		else:
-			out_stream = open(os.devnull, "w")
+			out_stream = NULL
 		if self.err:
-			err_stream = open(self.err, "w")
+			err_stream = open(str(self.err), "w")
 		else:
-			err_stream = open(os.devnull, "w")
+			err_stream = NULL
 		if self.input:
-			in_stream = open(input, "r")
+			in_stream = open(str(self.input), "r")
 		else:
-			in_stream = None
-		rc = subprocess.call(action.make_line(self.cmd), stdin = in_stream, stdout = out_stream, stderr = err_stream, shell = True)
+			in_stream = NULL
+		cmd = action.make_line(self.cmd)
+		if elfmake.verbose:
+			ctx.print_info("running %s" % cmd) 
+		rc = subprocess.call(cmd, stdin = in_stream, stdout = out_stream, stderr = err_stream, shell = True)
 		if rc <> 0:
-			self.failure(ctx)
+			self.failure(ctx, "return code = %d, command = %s" % (rc, cmd))
 			return
 			
 		# compare output if any
 		if self.out:
-			if not os.path.exists(self.out_ref):
+			if not self.out_ref.exists():
 				self.info(ctx, "no reference file for output, creating it!")
-				shutil.copyfile(self.out, self.out_ref)
+				elfmake.mkdir(str(self.out_ref.parent()))
+				shutil.copyfile(str(self.out), str(self.out_ref))
 			else:
 				c = 0
-				for l in difflib.context_diff(open(self.out, "r").readlines(), open(self.out_ref, "r").readlines()):
+				for l in difflib.context_diff(open(str(self.out), "r").readlines(), open(str(self.out_ref), "r").readlines()):
 					c += 1
 				if c:
-					self.failure(ctx)
+					self.failure(ctx, "different output stream")
 					return
 		
 		# compare error if any
@@ -158,7 +168,7 @@ class OutputTest(Test):
 				for l in difflib.context_diff(open(self.err, "r").readlines(), open(self.err_ref, "r").readlines()):
 					c += 1
 				if c:
-					self.failure(ctx)
+					self.failure(ctx, "different error stream")
 					return
 			
 		# display result

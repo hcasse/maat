@@ -34,7 +34,7 @@ def set_env(e):
 	global curdir
 	env.cenv = e
 	curenv = e
-	curdir = e.path
+	curdir = env.Path(e.path)
 	e.path.set_cur()
 	
 def push_env(env):
@@ -251,7 +251,10 @@ def suffix(p):
 
 def path(p):
 	"""Convert simple string to ElfMake path."""
-	return env.Path(p)
+	if p == None or p is env.Path:
+		return p
+	else:
+		return env.Path(str(p))
 
 def glob(re):
 	"""Select content of a directory from a filesystem regular expression."""
