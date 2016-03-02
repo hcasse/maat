@@ -68,8 +68,6 @@ from elfmake import *
 from elfmake import c
 
 c.program("hello", ["hello.c"])
-
-make()
 </code>
 
 To launch the building of the program, just type:
@@ -116,6 +114,7 @@ This is a default behaviour but, in the standard configuration, ElfMake
 can perform several tasks, also named //goals//:
   * ''all'' is the default applied goal and build what is required,
   * ''clean'' removes all temporaries files like object files,
+  * ''config'' builds the configuration,
   * ''distclean'' removes all produced files, i.e., object and executable files,
   * ''install'' performs the installation of files in the system, i.e. installation of ''hello'' in ''/usr/bin''.
 
@@ -185,12 +184,19 @@ Actions to work on files includes:
   * ''mkdir''(//path//) -- create the directory of the path.
   * ''remove''(//list//) -- remove directories and files of the list.
 
-===== Goals and Rules=====
+===== Goals and Rules =====
 
-  * ''fun''(//function//) -- build an action like a call to the given function.
   * ''goal''(//goal//, //deps//, //actions//) -- build a new goal (not matching a real file).
   * ''rule''(//ress//, //deps//, //actions//) -- build a specific rule for a particular file.
+
+===== Actions =====
+
+In the previous goals and rules, actions may be object of type Action but also strings
+that are automatically promoted as ''shell'' actions. Yet, other actions exists:
+
+  * ''fun''(//function//) -- build an action like a call to the given function.
   * ''shell''(//commands//) -- build a a shell action.
+
 
 ====== Standard Environment ======
 

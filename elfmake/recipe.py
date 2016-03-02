@@ -17,7 +17,7 @@ class File(env.MapEnv):
 	is_goal = False
 	
 	def __init__(self, path):
-		env.MapEnv.__init__(self, env.cenv.path, env.cenv)
+		env.MapEnv.__init__(self, path.get_file() , env.cenv.path, env.cenv)
 		self.path = path
 		file_db[str(path)] = self
 

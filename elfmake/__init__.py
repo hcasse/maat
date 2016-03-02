@@ -56,18 +56,19 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser = argparse.ArgumentParser(description = "ElfMake Builder")
 	parser.add_argument('free', type=str, nargs='*', metavar="goal", help="goal or Definitions")
 	parser.add_argument('-v',  '--verbose', action="store_true", default=False, help="verbose mode")
-	parser.add_argument('-c',  '--config', action="store_true", default=False, help="perform configuration")
 	
 	# get arguments
 	args = parser.parse_args()
 	verbose = args.verbose
-	do_config = args.config
+	do_config = False
 
 	# parse free arguments
 	for a in args.free:
 		p = a.split("=", 2)
 		if len(p) == 1:
 			todo.append(a)
+			if a == "config":
+				do_config = True
 		else:
 			env.osenv.set(p[0], p[1])
 
@@ -141,6 +142,14 @@ def make(ctx = io.Context()):
 		except KeyboardInterrupt, e:
 			sys.stderr.write("\n")
 			ctx.print_error("action interrupted by user!")
+
+
+def make_at_exit():
+	set_env(env.topenv)
+	make()
+	
+import atexit
+atexit.register(make_at_exit)
 
 
 ############## environment management #############

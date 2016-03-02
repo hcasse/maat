@@ -17,14 +17,15 @@ In addition, it is using the following variables from the current environment:
 """
 
 import elfmake as elf
-#import elfmake.action as action
+import elfmake.action as action
+import elfmake.config as config
 import elfmake.env as env
 import elfmake.recipe as recipe
 import os.path
 
 ALL = []
 CLEAN = []
-DISTCLEAN = []
+DISTCLEAN = ["config.py", "config.pyc"]
 INSTALL_PROGRAMS = []
 INSTALL_LIBS = []
 INSTALL_DATA = []
@@ -46,5 +47,11 @@ def install_default_goals():
 	path = env.cenv.path / "distclean"
 	if not recipe.file_db.has_key(path):
 		elf.goal("distclean", ["clean"], elf.remove(DISTCLEAN, ignore_error = True))
+
+
+	# install config
+	path = env.cenv.path / "config"
+	if not recipe.file_db.has_key(path):
+		elf.goal("config", [], action.FunAction(config.make))
 
 elf.post_inits.append(install_default_goals)

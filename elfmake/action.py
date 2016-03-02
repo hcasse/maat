@@ -100,7 +100,7 @@ class FunAction(Action):
 		self.fun = fun
 	
 	def execute(self, ress, deps, ctx):
-		fun(ress, deps, ctx)
+		self.fun(ress, deps, ctx)
 
 
 def make_actions(*actions):
@@ -187,6 +187,7 @@ class Remove(Action):
 	def execute(self, ress, deps, ctx):	
 		for p in self.paths:
 			try:
+				ctx.print_command("remove %s" % p)
 				if p.is_dir():
 					shutil.rmtree(str(p))
 				else:

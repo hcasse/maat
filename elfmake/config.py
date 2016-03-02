@@ -1,6 +1,7 @@
 """ElfMake module providing configuration classes."""
 import env
 import imp
+import elfmake.io as io
 import os.path
 import sys
 
@@ -39,7 +40,7 @@ def load(do_config):
 				
 				# warn if we are not in configuration
 				if not do_config:
-					print "WARNING: config.py for a different host found!\nReconfigure it with ./make.py -c"
+					print "WARNING: config.py for a different host found!\nReconfigure it with ./make.py config"
 					
 				# reset configuration else
 				else:
@@ -62,7 +63,7 @@ def set_if(id, fun):
 		global updated
 		updated = True
 
-def make():
+def make(ress = [], deps = [], ctx = io.Context()):
 	"""Build a configuration."""
 	global in_config
 	
@@ -76,7 +77,7 @@ def make():
 
 	# launch module configuration
 	for (n, f) in config_list:
-		f()
+		f(ctx)
 	
 	# if needed, output the configuration file
 	if updated:
@@ -93,7 +94,7 @@ def make():
 	in_config = False
 
 
-def find_program(label, var, progs, paths = [], syspath = True, sysfirst = True):
+def find_program(label, var, progs, paths = [], syspath = True, sysfirst = True, ctx = io.Context()):
 	"""Find the path of a program and display associated message.
 	
 	The label is displayed during the look-up, one of progs
@@ -132,8 +133,7 @@ def find_program(label, var, progs, paths = [], syspath = True, sysfirst = True)
 		lpaths = paths
 	
 	# lookup
-	sys.stdout.write(label + " ... ")
-	sys.stdout.flush()
+	ctx.print_action(label)
 	fpath = None
 	for path in lpaths:
 		for prog in progs:
@@ -148,9 +148,9 @@ def find_program(label, var, progs, paths = [], syspath = True, sysfirst = True)
 	# process result
 	env.confenv.set(var, fpath)
 	if fpath:
-		sys.stdout.write("found: %s\n" % fpath)
+		ctx.print_action_success("found: %s" % fpath)
 		global updated
 		updated = True
 	else:
-		sys.stdout.write("not found!")
+		ctx.print_action_failure("not found!")
 

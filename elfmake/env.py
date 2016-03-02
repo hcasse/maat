@@ -116,10 +116,10 @@ class Env:
 		self.name = name
 		self.path = path
 
-	def get(self, id):
+	def get(self, id, default = None):
 		"""Get an identifier looking in the current environment
 		or in the parent environment."""
-		return None
+		return default
 	
 	def set(self, id, val):
 		"""Set a value to an identifier in the current environment."""
@@ -150,8 +150,9 @@ class OSEnv(Env):
 	
 	def __init__(self, path = topdir):
 		Env.__init__(self, "os", path)
+		self.parent = None
 
-	def get(self, id):
+	def get(self, id, default = None):
 		v = os.getenv(id)
 		if v and OS_SPECS.has_key(id):
 			return OS_SPECS[id](v)
@@ -174,6 +175,8 @@ class OSEnv(Env):
 	def is_def(self, id):
 		return os.getenv(id) <> None
 
+	def __str__(self):
+		return "OS"
 
 class ParentEnv(Env):
 	"""Environment with a parent environment."""
@@ -183,9 +186,11 @@ class ParentEnv(Env):
 		Env.__init__(self, name, path)
 		self.parent = parent
 	
-	def get(self, id):
-		assert self <> self.parent
-		return self.parent.get(id)
+	def get(self, id, default = None):
+		if self.parent == None:
+			return default
+		else:
+			return self.parent.get(id, default)
 	
 	def append(self, id, val):
 		self.parent.append(id, val)
@@ -195,6 +200,14 @@ class ParentEnv(Env):
 
 	def is_def(self, id):
 		return self.parent.is_def(id)
+
+	def dump(self):
+		r = "%s" % self
+		c = self.parent
+		while c:
+			r = "%s < %s" % (r, c)
+			c = c.parent
+		return r
 
 
 class MapEnv(ParentEnv):
@@ -208,11 +221,12 @@ class MapEnv(ParentEnv):
 		else:
 			self.map = { }
 	
-	def get(self, id):
+	def get(self, id, default = None):
 		try:
-			return self.map[id]
+			r = self.map[id]
+			return r
 		except KeyError, e:
-			return ParentEnv.get(self, id)
+			return ParentEnv.get(self, id, default)
 	
 	def set(self, id, val):
 		self.map[id] = val
@@ -235,6 +249,8 @@ class MapEnv(ParentEnv):
 		else:
 			return ParentEnv.append_rec(self, id, val)
 	
+	def __str__(self):
+		return "%s (%s)" % (self.name, self.path)
 
 
 # environment definitons

@@ -12,10 +12,10 @@ c_comps = ["gcc", "cc"]
 cxx_comps = ["g++", "c++"] 
 
 def comp_c_to_o(ress, deps, ctx):
-	action.invoke([get("CC", "cc"), get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
+	action.invoke([ress[0].get("CC", "cc"), ress[0].get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
 
 def comp_cxx_to_o(ress, deps, ctx):
-	action.invoke([get("CXX", "c++"), get("CXXFLAGS"), get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
+	action.invoke([ress[0].get("CXX", "c++"), ress[0].get("CXXFLAGS"), ress[0].get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
 
 def select_linker(deps):
 	for dep in deps:
@@ -62,10 +62,10 @@ def program(name, sources):
 	std.DISTCLEAN.append(r.ress[0].path)
 
 
-def configure():
+def configure(c):
 	if need_c:
-		config.find_program("C compiler", "CC", ["gcc", "cc"])
+		config.find_program("C compiler", "CC", ["gcc", "cc"], ctx = c)
 	if need_cxx:
-		config.find_program("C++ compiler", "CXX", ["g++", "c++"])
+		config.find_program("C++ compiler", "CXX", ["g++", "c++"], ctx = c)
 	
 config.register("c", configure)
