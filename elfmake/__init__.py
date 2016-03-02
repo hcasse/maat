@@ -102,9 +102,14 @@ def make_rec(f, ctx):
 		ctx.print_info("Making %s" % f)
 		f.recipe.action(ctx)
 		pop_env()
-		
+
 
 def make(ctx = io.Context()):
+	"""Do nothing: only kept for backward compatibility."""
+	pass
+
+
+def make_work(ctx = io.Context()):
 	"""Perform the real build."""
 	
 	# are we at the top make.py?
@@ -146,7 +151,7 @@ def make(ctx = io.Context()):
 
 def make_at_exit():
 	set_env(env.topenv)
-	make()
+	make_work()
 	
 import atexit
 atexit.register(make_at_exit)

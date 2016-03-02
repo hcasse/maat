@@ -9,7 +9,11 @@
 [ ] add file update resolution based on file content
 [ ] add command to support file generation from variable content
 [ ] add option to embed elfmake in the current projet (making easier broadcasting of ElfMake)
-
+[ ] add option to dump recipe database
+[ ] add support for building in a different directory
+[ ] add option to dump selected variables
+[ ] add option to call configuration program and get back result in variables
+[ ] add goal to build a distribution (source, binary, etc)
 
 ===== Documentation =====
 
@@ -30,12 +34,14 @@
 ===== C Module =====
 
 [ ] document it
+[ ] add dependency analysis and load
 [ ] add support for static libraries
 [ ] add support for dynamic libraries / plugin / module
 [ ] add support for lex
 [ ] add support for yacc
 [ ] add support for LLVM
 [ ] add support for VS
+[ ] add support for ".exe" files
 
 
 ===== New Modules =====
