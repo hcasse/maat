@@ -17,15 +17,25 @@ def comp_c_to_o(ress, deps, ctx):
 def comp_cxx_to_o(ress, deps, ctx):
 	action.invoke([ress[0].get("CXX", "c++"), ress[0].get("CXXFLAGS"), ress[0].get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
 
-def select_linker(deps):
+
+def is_cxx(deps):
 	for dep in deps:
 		if dep.recipe and dep.recipe.deps:
 			if dep.recipe.deps[0].path.get_ext() in cpp_ext:
-				return get("CXX", "c++")
-	return get("CC", "cc")
+				return True
+	return False
+	
+
+def select_linker(prog, deps):
+	if is_cxx(deps):
+		return prog.get("CXX", "c++")
+	else:
+		return prog.get("CC", "cc")
+
 
 def link_program(ress, deps, ctx):
-	action.invoke([select_linker(deps), get("CFLAGS"), get("CXXFLAGS"), "-o", ress[0], deps, get("LDFLAGS")], ctx)
+	action.invoke([select_linker(ress[0], deps), ress[0].get("CFLAGS"), ress[0].get("CXXFLAGS"), "-o", ress[0], deps, ress[0].get("LDFLAGS")], ctx)
+
 
 recipe.FunGen(".o", ".c", comp_c_to_o)
 recipe.FunGen(".o", ".cxx", comp_cxx_to_o)

@@ -1,19 +1,28 @@
 
 ====== To Do ======
 
+===== Command =====
+
+[ ] add option to list goals
+[ ] add option to embed elfmake in the current projet (making easier broadcasting of ElfMake)
+[ ] add option to dump recipe database
+[ ] add option to dump selected variables
+[ ] add option to call configuration program and get back result in variables
+[ ] add option for dry run
+
+
 ===== Engine =====
 
 [ ] add map for symbolic names (program, library, etc)
-[ ] add option to list goals
 [ ] add file update resolution based on command matching
 [ ] add file update resolution based on file content
 [ ] add command to support file generation from variable content
-[ ] add option to embed elfmake in the current projet (making easier broadcasting of ElfMake)
-[ ] add option to dump recipe database
 [ ] add support for building in a different directory
-[ ] add option to dump selected variables
-[ ] add option to call configuration program and get back result in variables
 [ ] add goal to build a distribution (source, binary, etc)
+[ ] add parrallel run
+[ ] add builld in a different directory
+[X]	add "[", "]" syntax to environment
+
 
 ===== Documentation =====
 
@@ -24,6 +33,9 @@
 ===== Config Module =====
 
 [ ] add function to retrieve libraries
+[ ] add cygwin identification
+[ ] add MacOSX identification
+[ ] add OS variable to get unique identifier of OS for binary identification
 
 
 ===== Test Module =====

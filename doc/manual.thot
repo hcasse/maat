@@ -198,7 +198,15 @@ that are automatically promoted as ''shell'' actions. Yet, other actions exists:
   * ''shell''(//commands//) -- build a a shell action.
 
 
+====== Special Variables ======
+
+  * ''BPATH'' -- path used to build files in (as default, the directory containing the script).
+
+
 ====== Standard Environment ======
+
+
+
 
 
 ====== Standard Modules ======

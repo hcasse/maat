@@ -140,6 +140,16 @@ class Env:
 		is defined in the current environment. Pass back to parent else.
 		Return if appending has been performed, False else."""
 		pass
+	
+	def __getitem__(self, id):
+		return self.get(id)
+	
+	def __setitem__(self, id, val):
+		self.set(id, val)
+	
+	def get_here(self, id, default = None):
+		"""Get a value uniquely from the current environment."""
+		return default
 
 
 OS_SPECS = {
@@ -251,6 +261,12 @@ class MapEnv(ParentEnv):
 	
 	def __str__(self):
 		return "%s (%s)" % (self.name, self.path)
+
+	def get_here(self, id, default = None):
+		try:
+			return self.map[id]
+		except KeyError, e:
+			return default
 
 
 # environment definitons

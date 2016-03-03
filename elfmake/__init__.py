@@ -56,11 +56,13 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser = argparse.ArgumentParser(description = "ElfMake Builder")
 	parser.add_argument('free', type=str, nargs='*', metavar="goal", help="goal or Definitions")
 	parser.add_argument('-v',  '--verbose', action="store_true", default=False, help="verbose mode")
+	parser.add_argument('-l', '--list', action="store_true", default=False, help="display available goals")
 	
 	# get arguments
 	args = parser.parse_args()
 	verbose = args.verbose
 	do_config = False
+	do_list = args.list
 
 	# parse free arguments
 	for a in args.free:
@@ -132,21 +134,34 @@ def make_work(ctx = io.Context()):
 		ctx = io.Context()
 		if verbose:
 			ctx.command_ena = True
+
+		# list goals
+		if do_list:
+			l = [f for f in recipe.file_db.values() if f.is_goal]
+			l.sort()
+			ll = max([len(f.name) for f in l])
+			for f in l:
+				desc = f.get_here("DESCRIPTION")
+				if desc:
+					ctx.print_info("%s %s" % (f.name + " " * (ll - len(f.name)), desc))
+				else:
+					ctx.print_info(f.name)
 		
 		# do the build
-		try:
-			global todo
-			if not todo:
-				todo = ["all"]
-			for a in todo:
-				f = recipe.get_file(a)
-				make_rec(f, ctx)
-			ctx.print_success("all is fine!");
-		except env.ElfError, e:
-			ctx.print_error(e)
-		except KeyboardInterrupt, e:
-			sys.stderr.write("\n")
-			ctx.print_error("action interrupted by user!")
+		else:
+			try:
+				global todo
+				if not todo:
+					todo = ["all"]
+				for a in todo:
+					f = recipe.get_file(a)
+					make_rec(f, ctx)
+				ctx.print_success("all is fine!");
+			except env.ElfError, e:
+				ctx.print_error(e)
+			except KeyboardInterrupt, e:
+				sys.stderr.write("\n")
+				ctx.print_error("action interrupted by user!")
 
 
 def make_at_exit():
@@ -215,7 +230,7 @@ def subdir(dir):
 def goal(goal, deps, actions = action.NULL):
 	"""Define a goal that does not match an actual file.
 	Making the goal executes always its action."""
-	return action.goal(goal, deps, actions)
+	return recipe.goal(goal, deps, actions)
 
 def rule(ress, deps, *actions):
 	"""Build a custom rule with actions."""

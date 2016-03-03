@@ -1,5 +1,6 @@
 """Classes used to represent recipes."""
 import env
+import action
 import io
 import os
 import os.path
@@ -15,11 +16,25 @@ class File(env.MapEnv):
 	path = None
 	recipe = None
 	is_goal = False
+	is_target = False
+	is_sticky = False
 	
 	def __init__(self, path):
 		env.MapEnv.__init__(self, path.get_file() , env.cenv.path, env.cenv)
 		self.path = path
 		file_db[str(path)] = self
+
+	def set_goal(self):
+		"""Mark a file as a goal."""
+		self.is_goal = True
+	
+	def set_target(self):
+		"""Mark a file as a target."""
+		self.is_target = True
+	
+	def set_sticky(self):
+		"""Mark a file as sticky, that is, a final target (not intermediate)."""
+		self.sticky = True
 
 	def __div__(self, arg):
 		return self.path / str(arg)
@@ -219,5 +234,34 @@ def fix(path):
 	else:
 		return str(get_file(path))
 
+
+class ActionRecipe(Recipe):
+	"""A recipe that supports an action. object for generation."""
+	act = None
 	
+	def __init__(self, ress, deps, actions):
+		Recipe.__init__(self, ress, deps)
+		self.act = action.make_actions(actions)
+	
+	def action(self, ctx):
+		if self.act:
+			self.act.execute(self.ress, self.deps, ctx)
+
+
+def rule(ress, deps, *actions):
+	"""Build a rule with actions."""
+	ActionRecipe(ress, deps, make_actions(actions))
+
+
+def goal(goal, deps, actions = action.Action()):
+	"""Build a goal with the following dependencies."""
+	path = env.Path(env.cenv.path) / goal
+	file = get_file(str(path))
+	if file.recipe:
+		raise env.ElfError("a goal already named '%s' already exist!" % goal)
+	else:
+		file.set_goal()
+		file.recipe = ActionRecipe(goal, deps, actions)
+		return
+
 	

@@ -4,7 +4,6 @@ the recipes."""
 import env
 import os
 import re
-import recipe
 import select
 import sys
 import subprocess
@@ -162,19 +161,6 @@ class Grep(Action):
 			ctx.err = old_err
 
 
-class ActionRecipe(recipe.Recipe):
-	"""A recipe that supports an action. object for generation."""
-	act = None
-	
-	def __init__(self, ress, deps, action):
-		recipe.Recipe.__init__(self, ress, deps)
-		self.act = make_actions(action)
-	
-	def action(self, ctx):
-		if self.act:
-			self.act.execute(self.ress, self.deps, ctx)
-
-
 class Remove(Action):
 	"""Action of remove."""
 	paths = None
@@ -211,23 +197,4 @@ class Move(Action):
 			pass
 		except OSError, e:
 			raise env.ElfError(str(e))
-	
-
-def rule(ress, deps, *actions):
-	"""Build a rule with actions."""
-	ActionRecipe(ress, deps, make_actions(actions))
-
-
-def goal(goal, deps, actions = Action()):
-	"""Build a goal with the following dependencies."""
-	path = env.Path(env.cenv.path) / goal
-	file = recipe.get_file(str(path))
-	if file.recipe:
-		raise env.ElfError("a goal already named '%s' already exist!" % goal)
-	else:
-		file.is_goal = True
-		file.recipe = ActionRecipe(goal, deps, actions)
-		return
-
-
-	
+		

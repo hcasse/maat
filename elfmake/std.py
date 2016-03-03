@@ -37,21 +37,24 @@ def install_default_goals():
 	path = env.cenv.path / "all"
 	if not recipe.file_db.has_key(path):
 		elf.goal("all", ALL)
+		elf.file("all")["DESCRIPTION"] = "build all"
 
 	# install clean
 	path = env.cenv.path / "clean"
 	if not recipe.file_db.has_key(path):
 		elf.goal("clean", [], elf.remove(CLEAN, ignore_error = True))
+		elf.file("clean")["DESCRIPTION"] = "remove produced files"
 
 	# install distclean
 	path = env.cenv.path / "distclean"
 	if not recipe.file_db.has_key(path):
 		elf.goal("distclean", ["clean"], elf.remove(DISTCLEAN, ignore_error = True))
-
+		elf.file("distclean")["DESCRIPTION"] = "remove produced files and configuration files"
 
 	# install config
 	path = env.cenv.path / "config"
 	if not recipe.file_db.has_key(path):
 		elf.goal("config", [], action.FunAction(config.make))
+		elf.file("config")["DESCRIPTION"] = "build configuration"
 
 elf.post_inits.append(install_default_goals)
