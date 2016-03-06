@@ -51,9 +51,9 @@ class Action:
 	"""Base class of all actions."""
 	recipe = None
 	
-	def execute(self, ress, deps, ctx):
+	def execute(self, ctx):
 		"""Perform the action. If an action fails, raise env.ElfError exception.
-		It takes as parameter the list of results and the list of dependencies."""
+		It takes as parameter the IO context of execution."""
 		pass
 	
 	def display(self, out):
@@ -80,13 +80,14 @@ class ShellAction(Action):
 	cmd = None
 	quiet = False
 	
-	def __init__(self, cmd):
-		self.cmd = cmd
+	def __init__(self, cmd, quiet = False):
 		if cmd and cmd[0] == "@":
-			self.quiet = True
-			self.cmd = cmd[1:]
+			quiet = True
+			cmd = cmd[1:]
+		self.cmd = cmd
+		self.quiet = quiet
 
-	def execute(self, ress, deps, ctx):
+	def execute(self, ctx):
 		if self.quiet:
 			save = ctx.command_ena
 			ctx.command_ena = False
@@ -98,9 +99,7 @@ class ShellAction(Action):
 		out.write("\t%s\n" % self.cmd)
 
 	def clone(self):
-		a = ShellAction(cmd)
-		a.quiet = self.quiet
-		return a
+		return ShellAction(self.cmd, self.quiet)
 
 
 class GroupAction(Action):
@@ -110,16 +109,16 @@ class GroupAction(Action):
 	def __init__(self, actions):
 		self.actions = actions
 	
-	def execute(self, ress, deps, ctx):
+	def execute(self, ctx):
 		for action in self.actions:
-			action.execute(ress, deps, ctx)
+			action.execute(ctx)
 
 	def display(self, out):
 		for a in self.actions:
 			a.display(out)
 
 	def clone(self):
-		return GroupAction([a.clone() for a in self.actions])
+		return GroupAction([a.clone() for a in self.actions])		
 
 
 class FunAction(Action):
@@ -129,8 +128,8 @@ class FunAction(Action):
 	def __init__(self, fun):
 		self.fun = fun
 	
-	def execute(self, ress, deps, ctx):
-		self.fun(ress, deps, ctx)
+	def execute(self, ctx):
+		self.fun(self.recipe.ress, self.recipe.deps, ctx)
 
 	def display(self, out):
 		out.write("\tfunction\n")
@@ -184,14 +183,14 @@ class Grep(Action):
 		self.out = out
 		self.err = err
 
-	def execute(self, ress, deps, ctx):
+	def execute(self, ctx):
 		if self.out:
 			old_out = ctx.out
 			ctx.out = GrepStream(self.exp, old_out)
 		if self.err:
 			old_err = ctx.err
 			ctx.err = GrepStream(self.exp, old_err)
-		self.cmd.execute(ress, deps, ctx)
+		self.cmd.execute(self.recipe.ress, self.recipe.deps, ctx)
 		if self.out:
 			ctx.out = old_out
 		if self.err:
@@ -213,7 +212,7 @@ class Remove(Action):
 		self.paths = [env.Path(arg) for arg in args]
 		self.ignore_error = ignore_error
 	
-	def execute(self, ress, deps, ctx):	
+	def execute(self, ctx):	
 		for p in self.paths:
 			try:
 				ctx.print_command("remove %s" % p)
@@ -242,7 +241,7 @@ class Move(Action):
 		self.paths = [env.Path(arg) for arg in args]
 		self.target = env.Path(target)
 	
-	def execute(self, ress, deps, ctx):	
+	def execute(self, ctx):	
 		# TODO
 		try:
 			pass
@@ -264,7 +263,7 @@ class Invoke(Action):
 	def __init__(self, command):
 		self.command = command
 
-	def execute(self, ress, deps, ctx):	
+	def execute(self, ctx):	
 		try:
 			invoke(self.command(self.recipe), ctx)
 		except OSError, e:

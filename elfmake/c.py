@@ -34,11 +34,11 @@ def comp_cxx_to_o(r):
 def link_program(r):
 	return [select_linker(r.ress[0], r.deps), r.ress[0].get("CFLAGS"), r.ress[0].get("CXXFLAGS"), "-o", r.ress[0], r.deps, r.ress[0].get("LDFLAGS")]
 
-recipe.ActionGen(".o", ".c",   action.Invoke(comp_c_to_o))
-recipe.ActionGen(".o", ".cxx", action.Invoke(comp_cxx_to_o))
-recipe.ActionGen(".o", ".cpp", action.Invoke(comp_cxx_to_o))
-recipe.ActionGen(".o", ".c++", action.Invoke(comp_cxx_to_o))
-recipe.ActionGen(".o", ".C",   action.Invoke(comp_cxx_to_o))
+gen_command(".o", ".c",   comp_c_to_o)
+gen_command(".o", ".cxx", comp_cxx_to_o)
+gen_command(".o", ".cpp", comp_cxx_to_o)
+gen_command(".o", ".c++", comp_cxx_to_o)
+gen_command(".o", ".C",   comp_cxx_to_o)
 
 
 def program(name, sources):

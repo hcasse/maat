@@ -145,6 +145,65 @@ also ask for the building of a program by specifying in the command line:
 
 ====== Environment Management ======
 
+ElfMake work is based on the concept of environment: basically, an environment
+is map associating symbols or identifier with values, this association
+is called a variable. The values may
+be any Python value but are usually strings or list of strings: this comes
+from the fact that most actions are translated to calls to line commands.
+
+In ElfMake, all objects are environments: files, script, etc. In addition,
+the environment are stacked: each environment has as parent environment
+the one where it is created. For files, the aprent environment is the one
+of the script using the file. This stack is used to resolve variables
+from the higher enviroment to the lower one in the stack. Therefore,
+the script behaviour or variables are determined by the stack of script
+including it providing a modular flavor to ElfMake. The lowest environment
+is the OS variable environment meaning that the configuraton may be
+provided by defining variable in your preferred shell.
+
+To define a variable in your script environment is as easy as defined
+a variable in a Python program:
+<code python>
+CC="my_c_compiler"
+</code>
+
+Unfortunately, accessing the environment stack is not as easy.
+The code below:
+<code python>
+print "my compiler is %s" % CC
+</code>
+Will only resolve ''CC'' in the current environment (as usually in Python).
+To use the stack of environment, you have to type:
+<code python>
+print "my compiler is %s" % get("CC")
+</code>
+In addition, you can also provide a default value as second argument:
+<code python>
+print "my compiler is %s" % get("CC", "cc")
+</code>
+
+To define the variable in the environment of a specific file, you can
+use the ''file''() function:
+<code python>
+file("my_file.c")["CFLAGS"] = "-O2"
+</code>
+
+Finally, ElfMake provide explicit access to some environment information:
+  * curenv -- current environment,
+  * envstack -- stack of environment as a sequence.
+
+If you use the ''env'' module:
+<code python>
+import elfmake.env as env
+</code>
+
+The following environment are available:
+  * ''env.osenv'' -- environment representing OS variables,
+  * ''env.elfenv'' -- environment contaning built-in definitions,
+  * ''env.confenv'' -- environment containing the configuration,
+  * ''env.topenv'' -- environment of the top-level script,
+  * ''env.cenv'' -- current environment.
+
 
 ====== Configuration ======
 
@@ -207,11 +266,54 @@ that are automatically promoted as ''shell'' actions. Yet, other actions exists:
   * ''BPATH'' -- path used to build files in (as default, the directory containing the script).
 
 
+
 ====== Standard Environment ======
 
+The standard provides a consistant environment to let other modules
+interact in a convenient. It is not mandatory (you can provide your own
+standard module if needed) but this may make interaction with other modules
+more difficult.
 
+To use it:
+<code python>
+import elfmake.std as std
+</code>
 
+The standard module provides the following  goals:
+  * ''all'' -- compiles all,
+  * ''clean'' -- clean all produced files,
+  * ''distclean'' -- clean all files including configuration and .pyc files,
+  * ''config'' -- launch the configuration lookup.
+
+These goals are using the following variables:
+  * ''ALL'' -- list of targets to build,
+  * ''CLEAN'' -- list of files to clean up,
+  * ''DISTCLEAN'' -- list of files to clean in addition to ''CLEAN'',
+  * ''INSTALL_PROGRAMS'' -- list of programs to install,
+  * ''INSTALL_LIBS'' -- list of libraries to install,
+  * ''INSTALL_DATA'' -- list of data files to install.
 
 
 ====== Standard Modules ======
+
+===== C Module =====
+
+The C module is dedicated to the compilation of C or C++ files. To use it:
+<code python>
+import elfmake.c as c
+</code>
+
+This module provides generator from .c, .cpp, .c++, .cxx or .C source files
+to object .o files.
+
+The following rules are available:
+  * c.program(name, sources) -- build a C/C++ program from a list of sources.
+  On Windows, .exe is added automatically to the program name.
+
+This module uses the following variables to control the compilation:
+  * ''CC'' -- C compiler, looked up at configuration (may be customized in script or source file),
+  * ''CXX'' -- C++ compiled, look up at configuration (may be customized in script or in source file),
+  * ''CFLAGS'' -- flags for C compilation (may be customized in script or in source file),
+  * ''CXXFLAGS'' -- flags for C++ compilation (may be customized in script or in source file),
+  * ''LDFLAGS'' -- link flags for C/C++ program building (may be customized in script or in program file).
 

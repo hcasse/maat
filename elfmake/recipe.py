@@ -257,7 +257,7 @@ class ActionRecipe(Recipe):
 
 	def action(self, ctx):
 		if self.act:
-			self.act.execute(self.ress, self.deps, ctx)
+			self.act.execute(ctx)
 	
 	def display_action(self, out):
 		self.act.display(out)
