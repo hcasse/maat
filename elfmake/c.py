@@ -66,7 +66,7 @@ def program(name, sources):
 	# record it
 	std.ALL.append(r.ress[0].path)
 	std.CLEAN = std.CLEAN + [file(obj) for obj in objs]
-	std.DISTCLEAN.append(r.ress[0].path)
+	std.DISTCLEAN.append(r.ress[0])
 
 
 def configure(c):

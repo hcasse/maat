@@ -18,6 +18,7 @@ class File(env.MapEnv):
 	is_goal = False
 	is_target = False
 	is_sticky = False
+	actual_path = None
 	
 	def __init__(self, path):
 		env.MapEnv.__init__(self, path.get_file() , env.cenv.path, env.cenv)
@@ -36,6 +37,25 @@ class File(env.MapEnv):
 		"""Mark a file as sticky, that is, a final target (not intermediate)."""
 		self.sticky = True
 
+	def actual(self):
+		"""Get the actual path of the file. For target file, this path
+		is relative to BPATH variable."""
+		if not self.actual_path:
+			if not self.is_target:
+				self.actual_path = self.path
+			else:
+				bpath = self["BPATH"]
+				if not bpath:
+					self.actual_path = self.path
+				else:
+					bpath = env.topenv.path / bpath
+					bpath = env.Path(bpath)
+					if self.path.prefixed_by(env.topenv.path):
+						self.actual_path = bpath / self.path.relative_to(env.topenv.path)
+					else:
+						self.actual_path =  bpath / self.path
+		return self.actual_path
+
 	def __div__(self, arg):
 		return self.path / str(arg)
 	
@@ -44,7 +64,7 @@ class File(env.MapEnv):
 		if self.is_goal:
 			return 0
 		else:
-			return self.path.get_mod_time()
+			return self.actual().get_mod_time()
 	
 	def younger_than(self, f):
 		"""Test if the current file is younger than the given one."""
@@ -54,10 +74,11 @@ class File(env.MapEnv):
 			return self.time() < f.time()
 	
 	def __str__(self):
-		if self.path.prefixed_by(env.topdir) or self.path.prefixed_by(env.curdir()):
-			return str(self.path.relative_to_cur())
+		path = self.actual()
+		if path.prefixed_by(env.topdir) or path.prefixed_by(env.curdir()):
+			return str(path.relative_to_cur())
 		else:
-			return self.path
+			return str(path)
 
 
 def get_file(path):
@@ -107,6 +128,7 @@ class Recipe:
 		self.deps = deps
 		for f in ress:
 			f.recipe = self
+			f.is_target = True
 		self.env = env.cenv
 		if hasattr(ress[0], 'cwd'):
 			self.cwd = ress[0].cwd

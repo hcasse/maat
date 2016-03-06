@@ -62,7 +62,6 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser.add_argument('-l', '--list', action="store_true", default=False, help="display available goals")
 	parser.add_argument('-p', '--print-data-base', action="store_true", default=False, help="print the recipe database")
 
-
 	# get arguments
 	args = parser.parse_args()
 	verbose = args.verbose
@@ -78,7 +77,7 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 			if a == "config":
 				do_config = True
 		else:
-			env.osenv.set(p[0], p[1])
+			env.elfenv.set(p[0], p[1])
 
 
 # make process
@@ -91,7 +90,7 @@ def make_rec(f, ctx):
 		
 	# need update?
 	update = f.is_goal
-	if not f.path.exists():
+	if not f.actual().exists():
 		if not f.recipe:
 			raise env.ElfError("file '%s' does not exist and no recipe is able to build it" % f.path)
 		else:
@@ -105,6 +104,17 @@ def make_rec(f, ctx):
 	
 	# if needed, perform update
 	if update:
+		
+		# ensure directory exists
+		for r in f.recipe.ress:
+			ppath = r.actual().parent()
+			if not ppath.exists():
+				try:
+					os.makedirs(str(ppath))
+				except error, e:
+					raise env.ElfError(str(e))
+		
+		# perform the recipe action
 		push_env(f.recipe.env)
 		env.Path(f.recipe.cwd).set_cur()
 		ctx.print_info("Making %s" % f)

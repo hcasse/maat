@@ -3,12 +3,12 @@
 
 ===== Command =====
 
-[X] add option to list goals
 [ ] add option to embed elfmake in the current projet (making easier broadcasting of ElfMake)
-[X] add option to dump recipe database
 [ ] add option to dump selected variables
 [ ] add option to call configuration program and get back result in variables
 [ ] add option for dry run
+[X] add option to dump recipe database
+[X] add option to list goals
 
 
 ===== Engine =====
@@ -17,17 +17,16 @@
 [ ] add file update resolution based on command matching
 [ ] add file update resolution based on file content
 [ ] add command to support file generation from variable content
-[ ] add support for building in a different directory
 [ ] add goal to build a distribution (source, binary, etc)
 [ ] add parrallel run
-[ ] add build in a different directory
+[ ] add overload for "." to environment
+[X] add support for building in a different directory
 [X]	add "[", "]" syntax to environment
-
 
 ===== Documentation =====
 
-[ ] add documentation for use of file attributes and explaining environment resolution
 [ ] build a website
+[X] add documentation for use of file attributes and explaining environment resolution
 
 
 ===== Config Module =====

@@ -63,6 +63,9 @@ class Path:
 	def relative_to_cur(self):
 		return Path(os.path.relpath(self.path))
 
+	def relative_to(self, path):
+		return Path(os.path.relpath(self.path, path.path))
+
 	def norm(self):
 		"""Build a normalized of version of current path."""
 		return Path(os.path.normpath(self.path))
@@ -81,7 +84,7 @@ class Path:
 
 	def parent(self):
 		"""Get the parent directory of the current directory."""
-		return os.path.dirname(self.path)
+		return Path(os.path.dirname(self.path))
 	
 	def glob(self, re = "*"):
 		return glob.glob(os.path.join(self.path, re))
@@ -170,8 +173,9 @@ class OSEnv(Env):
 			return os.getenv(id)
 	
 	def set(self, id, val):
-		os.putenv(id, to_string(val))
-
+		#os.putenv(id, to_string(val))
+		os.environ[id] = to_string(val)
+	
 	def append(self, id, val):
 		self.set(id, self.get(id) + to_string(val))
 

@@ -63,12 +63,17 @@ def set_if(id, fun):
 		global updated
 		updated = True
 
-def make(ress = [], deps = [], ctx = io.Context()):
+def make(ctx = io.Context()):
 	"""Build a configuration."""
 	global in_config
 	
 	# enable config mode
 	in_config = True
+
+	# look for a build path
+	bpath = env.elfenv["BPATH"]
+	if bpath:
+		env.confenv["BPATH"] = bpath
 
 	# builtin configuration
 	global win_list

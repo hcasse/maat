@@ -64,10 +64,14 @@ class Action:
 		"""Clone the current action."""
 		return Action()
 
+	def set_recipe(self, recipe):
+		"""Set the recipe implemented by the current action."""
+		self.recipe = recipe
+
 	def instantiate(self, recipe):
 		"""Build a new instance of the given action with the given recipe."""
 		a = self.clone()
-		a.recipe = recipe
+		a.set_recipe(recipe)
 		return a
 
 
@@ -119,6 +123,11 @@ class GroupAction(Action):
 
 	def clone(self):
 		return GroupAction([a.clone() for a in self.actions])		
+
+	def set_recipe(self, recipe):
+		Action.set_recipe(self, recipe)
+		for a in self.actions:
+			a.set_recipe(recipe)
 
 
 class FunAction(Action):

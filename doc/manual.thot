@@ -142,6 +142,25 @@ also ask for the building of a program by specifying in the command line:
 
 ===== Customizing the compilation =====
 
+==== Selecting a different build directory ====
+
+Variable 'BPATH' is used to select in which directory to build files.
+As a default, the build path is the top-level directory (containing the
+main script). To change the build directory, one has to reconfigure
+the project with a command like:
+<code bash>
+> ./make.py config BPATH=BUILD_DIRECTORY
+</bash>
+
+And to replace //BUILD_DIRECTORY// by the absolute or the relative path
+to the build directory.
+
+Anotehr way to customize the build directory after configuration
+is to edit the file ''config.py'' and to add a line like:
+<code python>
+BPATH = "BUILD_DIRECTORY"
+</code>
+
 
 ====== Environment Management ======
 
