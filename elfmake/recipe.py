@@ -117,6 +117,15 @@ class Recipe:
 		"""Execute the receipe."""
 		pass
 
+	def display_action(self, out):
+		pass
+
+	def display(self, out):
+		out.write("%s: %s\n" % (" ".join([str(f) for f in self.ress]), " ".join([str(f) for f in self.deps])))
+		self.display_action(out)
+		out.write("\n")
+
+
 
 class FunRecipe(Recipe):
 	"""A recipe that activates a function."""
@@ -125,6 +134,9 @@ class FunRecipe(Recipe):
 	def __init__(self, fun, ress, deps):
 		Recipe.__init__(self, ress, deps)
 		self.fun = fun
+
+	def display_action(self, out):
+		out.write("\t<internal>\n")
 
 	def action(self, ctx):
 		self.fun(self.ress, self.deps, ctx)
@@ -241,12 +253,27 @@ class ActionRecipe(Recipe):
 	
 	def __init__(self, ress, deps, actions):
 		Recipe.__init__(self, ress, deps)
-		self.act = action.make_actions(actions)
-	
+		self.act = action.make_actions(actions).instantiate(self)
+
 	def action(self, ctx):
 		if self.act:
 			self.act.execute(self.ress, self.deps, ctx)
+	
+	def display_action(self, out):
+		self.act.display(out)
 
+
+class ActionGen(Gen):
+	"""A recipe generator supporting simple actions."""
+	action = None
+	
+	def __init__(self, res, dep, action):
+		Gen.__init__(self, res, dep)
+		self.action = action
+		
+	def gen(self, res, dep):
+		return ActionRecipe([res], [dep], self.action)
+	
 
 def rule(ress, deps, *actions):
 	"""Build a rule with actions."""

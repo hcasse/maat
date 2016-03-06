@@ -11,13 +11,6 @@ cpp_ext = [".cpp", ".cxx", ".C"]
 c_comps = ["gcc", "cc"]
 cxx_comps = ["g++", "c++"] 
 
-def comp_c_to_o(ress, deps, ctx):
-	action.invoke([ress[0].get("CC", "cc"), ress[0].get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
-
-def comp_cxx_to_o(ress, deps, ctx):
-	action.invoke([ress[0].get("CXX", "c++"), ress[0].get("CXXFLAGS"), ress[0].get("CFLAGS"), "-o", ress[0], "-c", deps[0]], ctx)
-
-
 def is_cxx(deps):
 	for dep in deps:
 		if dep.recipe and dep.recipe.deps:
@@ -33,15 +26,19 @@ def select_linker(prog, deps):
 		return prog.get("CC", "cc")
 
 
-def link_program(ress, deps, ctx):
-	action.invoke([select_linker(ress[0], deps), ress[0].get("CFLAGS"), ress[0].get("CXXFLAGS"), "-o", ress[0], deps, ress[0].get("LDFLAGS")], ctx)
+# generic recipes
+def comp_c_to_o(r):
+	return [r.ress[0].get("CC", "cc"), r.ress[0].get("CFLAGS"), "-o", r.ress[0], "-c", r.deps[0]]
+def comp_cxx_to_o(r):
+	return [r.ress[0].get("CXX", "c++"), r.ress[0].get("CXXFLAGS"), r.ress[0].get("CFLAGS"), "-o", r.ress[0], "-c", r.deps[0]]
+def link_program(r):
+	return [select_linker(r.ress[0], r.deps), r.ress[0].get("CFLAGS"), r.ress[0].get("CXXFLAGS"), "-o", r.ress[0], r.deps, r.ress[0].get("LDFLAGS")]
 
-
-recipe.FunGen(".o", ".c", comp_c_to_o)
-recipe.FunGen(".o", ".cxx", comp_cxx_to_o)
-recipe.FunGen(".o", ".cpp", comp_cxx_to_o)
-recipe.FunGen(".o", ".c++", comp_cxx_to_o)
-recipe.FunGen(".o", ".C", comp_cxx_to_o)
+recipe.ActionGen(".o", ".c",   action.Invoke(comp_c_to_o))
+recipe.ActionGen(".o", ".cxx", action.Invoke(comp_cxx_to_o))
+recipe.ActionGen(".o", ".cpp", action.Invoke(comp_cxx_to_o))
+recipe.ActionGen(".o", ".c++", action.Invoke(comp_cxx_to_o))
+recipe.ActionGen(".o", ".C",   action.Invoke(comp_cxx_to_o))
 
 
 def program(name, sources):
@@ -64,7 +61,7 @@ def program(name, sources):
 	
 	# build recipe
 	objs = [recipe.gen(name.parent(), ".o", s) for s in sources]
-	r = recipe.FunRecipe(link_program, [name], objs)
+	r = recipe.ActionRecipe([name], objs, action.Invoke(link_program))
 	
 	# record it
 	std.ALL.append(r.ress[0].path)

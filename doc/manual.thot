@@ -186,8 +186,12 @@ Actions to work on files includes:
 
 ===== Goals and Rules =====
 
+The following commands may be used to manage goals and rules:
   * ''goal''(//goal//, //deps//, //actions//) -- build a new goal (not matching a real file).
   * ''rule''(//ress//, //deps//, //actions//) -- build a specific rule for a particular file.
+
+The following variables are used:
+  * ''DESCRIPTION'' put on a goal file, provide description for the goal for option "-l".
 
 ===== Actions =====
 

@@ -49,11 +49,27 @@ def invoke(cmd, ctx):
 
 class Action:
 	"""Base class of all actions."""
+	recipe = None
 	
 	def execute(self, ress, deps, ctx):
 		"""Perform the action. If an action fails, raise env.ElfError exception.
 		It takes as parameter the list of results and the list of dependencies."""
 		pass
+	
+	def display(self, out):
+		"""Display an action (one tab + one line)."""
+		pass
+	
+	def clone(self):
+		"""Clone the current action."""
+		return Action()
+
+	def instantiate(self, recipe):
+		"""Build a new instance of the given action with the given recipe."""
+		a = self.clone()
+		a.recipe = recipe
+		return a
+
 
 NULL = Action()
 """Null action."""
@@ -78,6 +94,14 @@ class ShellAction(Action):
 		if self.quiet:
 			ctx.command_ena = save
 
+	def display(self, out):
+		out.write("\t%s\n" % self.cmd)
+
+	def clone(self):
+		a = ShellAction(cmd)
+		a.quiet = self.quiet
+		return a
+
 
 class GroupAction(Action):
 	"""Represent a group of actions."""
@@ -90,6 +114,13 @@ class GroupAction(Action):
 		for action in self.actions:
 			action.execute(ress, deps, ctx)
 
+	def display(self, out):
+		for a in self.actions:
+			a.display(out)
+
+	def clone(self):
+		return GroupAction([a.clone() for a in self.actions])
+
 
 class FunAction(Action):
 	"""An action that takes a function to execution the action."""
@@ -100,6 +131,12 @@ class FunAction(Action):
 	
 	def execute(self, ress, deps, ctx):
 		self.fun(ress, deps, ctx)
+
+	def display(self, out):
+		out.write("\tfunction\n")
+
+	def clone(self):
+		return FunAction(self.fun)
 
 
 def make_actions(*actions):
@@ -160,6 +197,12 @@ class Grep(Action):
 		if self.err:
 			ctx.err = old_err
 
+	def display(self, ress, deps, out):
+		out.write("\t%s | grep %s" % (self.cmd, self.exp))
+
+	def clone(self):
+		return Grep(self.exp, self.cmd, self.out, self.err)
+
 
 class Remove(Action):
 	"""Action of remove."""
@@ -182,6 +225,13 @@ class Remove(Action):
 				if not self.ignore_error:
 					raise env.ElfError(str(e))
 
+	def display(self, out):
+		for p in self.paths:
+			out.write("\tremove %s\n" % p)
+
+	def clone(self):
+		return Remove(self.paths, ignore_error = self.ignore_error)
+
 
 class Move(Action):
 	"""Action of a moving file or directories to a specific directory."""
@@ -193,8 +243,35 @@ class Move(Action):
 		self.target = env.Path(target)
 	
 	def execute(self, ress, deps, ctx):	
+		# TODO
 		try:
 			pass
 		except OSError, e:
 			raise env.ElfError(str(e))
 		
+	def display(self, out):
+		for p in self.paths:
+			out.write("\tmove %s to %s\n" % (p, self.target))
+
+	def clone(self):
+		return Move(self.paths, self.target)
+
+
+class Invoke(Action):
+	"""Action that performs an invocation on the recipe components."""
+	command = None
+
+	def __init__(self, command):
+		self.command = command
+
+	def execute(self, ress, deps, ctx):	
+		try:
+			invoke(self.command(self.recipe), ctx)
+		except OSError, e:
+			raise env.ElfError(str(e))
+		
+	def display(self, out):
+		out.write("\t%s\n" % make_line(self.command(self.recipe)))
+
+	def clone(self):
+		return Invoke(self.command)

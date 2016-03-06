@@ -9,6 +9,7 @@ import inspect
 import io
 import os
 import recipe
+import services
 import shutil
 import subprocess
 import sys
@@ -19,6 +20,8 @@ topdir = env.topdir	# top directory
 todo = []			# goals to do
 verbose = False		# verbose mode
 do_config = False	# configuration need to be done
+do_list = False		# list the goals
+do_print_db = False	# print the data base
 post_inits = []		# function to call just before building
 
 
@@ -57,12 +60,15 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser.add_argument('free', type=str, nargs='*', metavar="goal", help="goal or Definitions")
 	parser.add_argument('-v',  '--verbose', action="store_true", default=False, help="verbose mode")
 	parser.add_argument('-l', '--list', action="store_true", default=False, help="display available goals")
-	
+	parser.add_argument('-p', '--print-data-base', action="store_true", default=False, help="print the recipe database")
+
+
 	# get arguments
 	args = parser.parse_args()
 	verbose = args.verbose
 	do_config = False
 	do_list = args.list
+	do_print_db = args.print_data_base
 
 	# parse free arguments
 	for a in args.free:
@@ -135,17 +141,11 @@ def make_work(ctx = io.Context()):
 		if verbose:
 			ctx.command_ena = True
 
-		# list goals
+		# command line services
 		if do_list:
-			l = [f for f in recipe.file_db.values() if f.is_goal]
-			l.sort()
-			ll = max([len(f.name) for f in l])
-			for f in l:
-				desc = f.get_here("DESCRIPTION")
-				if desc:
-					ctx.print_info("%s %s" % (f.name + " " * (ll - len(f.name)), desc))
-				else:
-					ctx.print_info(f.name)
+			services.list_goals(ctx)
+		elif do_print_db:
+			services.print_db()
 		
 		# do the build
 		else:
