@@ -1,4 +1,4 @@
-"""Module providing standard services for ElfMake that includes automatic
+"""Module providing standard services for Maat that includes automatic
 goals:
   - all -- build all,
   - clean -- cleanup temporaries files,
@@ -16,11 +16,11 @@ In addition, it is using the following variables from the current environment:
   - VERSION -- project version.
 """
 
-import elfmake as elf
-import elfmake.action as action
-import elfmake.config as config
-import elfmake.env as env
-import elfmake.recipe as recipe
+import maat as elf
+import maat.action as action
+import maat.config as config
+import maat.env as env
+import maat.recipe as recipe
 import os.path
 
 ALL = []

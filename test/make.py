@@ -1,6 +1,6 @@
 #!/usr/bin/python
-import elfmake.c as c
-import elfmake as m
+import maat.c as c
+import maat as m
 
 CFLAGS = "-g3"
 

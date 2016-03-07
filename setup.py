@@ -3,12 +3,12 @@
 from distutils.core import setup
 
 setup(
-	name = 'elfmake',
-	version='0.1',
+	name = 'maat',
+	version='0.2',
 	description = 'Python replacement for classic make',
 	author = 'Hugues Casse',
 	author_email = 'hugues.casse@laposte.net',
-	url = 'https://github.com/hcasse/elfmake',
+	url = 'https://github.com/hcasse/maat',
 	license = "GPL",
 	packages = ['elfmake']
 )

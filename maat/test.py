@@ -1,9 +1,9 @@
 """Module providing test services."""
-import elfmake
-from elfmake import action
-from elfmake import env
-from elfmake import io
-from elfmake import recipe
+import maat
+from maat import action
+from maat import env
+from maat import io
+from maat import recipe
 import difflib
 import os
 import os.path
@@ -112,10 +112,10 @@ class OutputTest(Test):
 	def __init__(self, case, name, cmd, out = None, out_ref = None, err = None, err_ref = None, input = None, deps = None):
 		Test.__init__(self, case, name, deps)
 		self.cmd = cmd
-		self.out = elfmake.path(out)
-		self.out_ref = elfmake.path(out_ref)
-		self.err = elfmake.path(err)
-		self.err_ref = elfmake.path(err_ref)
+		self.out = maat.path(out)
+		self.out_ref = maat.path(out_ref)
+		self.err = maat.path(err)
+		self.err_ref = maat.path(err_ref)
 		self.input = input
 	
 	def test(self, ctx):
@@ -124,7 +124,7 @@ class OutputTest(Test):
 		
 		# launch the command
 		if self.out:
-			elfmake.mkdir(str(self.out.parent()))
+			maat.mkdir(str(self.out.parent()))
 			out_stream = open(str(self.out), "w")
 		else:
 			out_stream = NULL
@@ -137,7 +137,7 @@ class OutputTest(Test):
 		else:
 			in_stream = NULL
 		cmd = action.make_line(self.cmd)
-		if elfmake.verbose:
+		if maat.verbose:
 			ctx.print_info("running %s" % cmd) 
 		rc = subprocess.call(cmd, stdin = in_stream, stdout = out_stream, stderr = err_stream, shell = True)
 		if rc <> 0:
@@ -148,7 +148,7 @@ class OutputTest(Test):
 		if self.out:
 			if not self.out_ref.exists():
 				self.info(ctx, "no reference file for output, creating it!")
-				elfmake.mkdir(str(self.out_ref.parent()))
+				maat.mkdir(str(self.out_ref.parent()))
 				shutil.copyfile(str(self.out), str(self.out_ref))
 			else:
 				c = 0
@@ -189,7 +189,7 @@ def post_init():
 	"""Initialize the test goal."""
 	path = env.cenv.path / "test"
 	if not recipe.file_db.has_key(path):
-		elfmake.goal("test", TEST_CASES)
+		maat.goal("test", TEST_CASES)
 
 
-elfmake.post_inits.append(post_init)
+maat.post_inits.append(post_init)

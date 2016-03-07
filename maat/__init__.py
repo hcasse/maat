@@ -1,4 +1,4 @@
-"""Main module of ElfMake, a python-based build system."""
+"""Main module of Maat, a python-based build system."""
 import action
 import argparse
 import config
@@ -56,7 +56,7 @@ set_env(env.cenv)
 if not inspect.stack()[-1][1].endswith("pydoc"):
 
 	# parse arguments
-	parser = argparse.ArgumentParser(description = "ElfMake Builder")
+	parser = argparse.ArgumentParser(description = "Maat Builder")
 	parser.add_argument('free', type=str, nargs='*', metavar="goal", help="goal or Definitions")
 	parser.add_argument('-v',  '--verbose', action="store_true", default=False, help="verbose mode")
 	parser.add_argument('-l', '--list', action="store_true", default=False, help="display available goals")
@@ -283,7 +283,7 @@ def listdir(path = None):
 	return os.listdir(str(path))
 
 def file(p):
-	"""Convert a simple string to a ElfMake file."""
+	"""Convert a simple string to a Maat file."""
 	return recipe.get_file(p)
 
 def ext_of(p):
@@ -299,7 +299,7 @@ def suffix(p):
 		return env.Path(p).get_ext()
 
 def path(p):
-	"""Convert simple string to ElfMake path."""
+	"""Convert simple string to Maat path."""
 	if p == None or p is env.Path:
 		return p
 	else:

@@ -1,4 +1,4 @@
-"""Input/output management module for ElfMake tool."""
+"""Input/output management module for Maat tool."""
 import sys
 
 # ANSI coloration

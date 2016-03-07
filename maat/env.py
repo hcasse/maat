@@ -1,4 +1,4 @@
-"""Implementation of environment in ElfMake."""
+"""Implementation of environment in Maat."""
 import glob
 import os
 import os.path
@@ -275,7 +275,7 @@ class MapEnv(ParentEnv):
 
 # environment definitons
 osenv = OSEnv()
-elfenv = MapEnv("builtin", topdir, osenv, sys.modules["elfmake"].__dict__)
+elfenv = MapEnv("builtin", topdir, osenv, sys.modules["maat"].__dict__)
 confenv = MapEnv("config", topdir, elfenv)
 topenv = MapEnv("main", topdir, confenv, sys.modules['__main__'].__dict__)
 cenv = topenv		# current environment

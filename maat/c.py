@@ -1,9 +1,9 @@
 import os.path
-from elfmake import *
-import elfmake as base
-import elfmake.recipe as recipe
-import elfmake.action as action
-import elfmake.std as std
+from maat import *
+import maat as base
+import maat.recipe as recipe
+import maat.action as action
+import maat.std as std
 
 need_c = False
 need_cxx = False
