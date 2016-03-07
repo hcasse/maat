@@ -1,0 +1,63 @@
+
+====== To Do ======
+
+===== Command =====
+
+[ ] add option to embed elfmake in the current projet (making easier broadcasting of ElfMake)
+[ ] add option to dump selected variables
+[ ] add option to call configuration program and get back result in variables
+[ ] add option for dry run
+[X] add option to dump recipe database
+[X] add option to list goals
+
+
+===== Engine =====
+
+[ ] add map for symbolic names (program, library, etc)
+[ ] add file update resolution based on command matching
+[ ] add file update resolution based on file content
+[ ] add command to support file generation from variable content
+[ ] add goal to build a distribution (source, binary, etc)
+[ ] add parrallel run
+[ ] add overload for "." to environment
+[X] add support for building in a different directory
+[X]	add "[", "]" syntax to environment
+
+===== Documentation =====
+
+[ ] build a website
+[X] add documentation for use of file attributes and explaining environment resolution
+
+
+===== Config Module =====
+
+[ ] add function to retrieve libraries
+[ ] add cygwin identification
+[ ] add MacOSX identification
+[ ] add OS variable to get unique identifier of OS for binary identification
+
+
+===== Test Module =====
+
+[ ] document it
+
+
+===== C Module =====
+
+[ ] document it
+[ ] add dependency analysis and load
+[ ] add support for static libraries
+[ ] add support for dynamic libraries / plugin / module
+[ ] add support for lex
+[ ] add support for yacc
+[ ] add support for LLVM
+[ ] add support for VS
+[ ] add support for ".exe" files
+
+
+===== New Modules =====
+
+[ ] Java support
+[ ] OCAML support
+[ ] Python support
+[ ] integrate a packaging system (allowing retrieval and automatically dependency build)

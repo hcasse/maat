@@ -1,0 +1,338 @@
+@use dokuwiki
+@TITLE=ElfMake Manual
+@AUTHORS=H. Cassé <hugues.casse@laposte.net>
+@VERSION=0.1
+@LANG=en_EN
+
+@ELFMAKE=//ElfMake//
+
+====== Introduction ======
+
+ElfMake is the result of my frustation in the use of GnuMake,
+CMake and AutoTools. There are lots of alternatives tools (particularly
+for GnuMake) like Scons, AAP, Ant, etc but they don't maintain
+the brilliant of recipes (also known as rules).
+
+A recipe is formed of three components:
+  * the target files that the products of the rule,
+  * the dependency files that the targets are build from,
+  * the action that performs the build of the target from the dependencies.
+
+The concept is very simple: if the targets are older than the depedencies,
+the action is executed and must build the target files using the dependency files.
+Such a simple is very beautiful because it's enough to represent most building
+process of most applications including executables, static and dynamic libraries
+and anything where exists transforming program on files. But most alternatives
+to GnuMake dropped such a treasure.
+
+Yet, GnuMake (and its ancestors) has two main drawbacks:
+  * unefficient solving process of generic recipes causing combinatory explosion of file lookup,
+  * inadequate script layer that makes the task of building automatically recipes exceedingly hard and non-modular.
+
+ElfMake try to solve both problems while keeping the concept of generic recipes.
+The first issue is solved by reducing the domain of lookup for automatic recipes:
+only dependency strings between a source file and its final object are considereed.
+The second issue is simply achieved using Python as the script system.
+Fortunately, Python alone is not enough and ElfMake provides lots of common facilities
+to create and control recipes.
+
+About building systems like CMake or BuildTools, the integration inside
+ElfMake comes from the easy statement that there is no reason to separate
+building configuration and building itself. Moreover, the building scripts,
+where programs and sources are defined, have a better knowledge of what is
+done and therefore can identify which are the requirements for building
+the application.
+
+
+====== Simple Recipe ======
+
+===== Hello, World! =====
+
+Let's start with the very classic "Hello, World" example. With your
+prefered editor, create a file named ''hello.c'' and enter its content:
+
+<code c>
+#include <stdio.h>
+
+int main(void) {
+	puts("Hello, World!");
+	return 0;
+}
+</code>
+
+Our goal is to generate an executable for our program. With ElfMake,
+just create a new file named ''make.py'' with the following content:
+
+<code py>
+from elfmake import *
+from elfmake import c
+
+c.program("hello", ["hello.c"])
+</code>
+
+To launch the building of the program, just type:
+<code sh>
+> python make.py
+</code>
+
+The following output will appear meaning that the building is successful:
+<code>
+ cc  -o hello.o -c hello.c
+ cc  -o hello hello.o 
+</code>
+
+As no error is displayed, compulation is successful and you can test your first program:
+<code>
+>./hello
+Hello, World!
+</code>
+
+Now, you can modify your source ''hello.c'' or add new source file to your program,
+you have just to invoke ''python make.py'' to get your program re-compiled and,
+of course, only the modified sources are re-compiled. But you make things
+a bit more automatic. Add in front of ''make.py'' the line:
+
+<code py>
+#!/usr/bin/python
+</code>
+
+And make this file executable:
+<code>
+chmod +x make.py
+</code>
+
+Then, the make process is simply restarted by:
+<code sh>
+> ./make.py
+</code>
+
+
+===== Goals =====
+
+Previous section has exposed how ElfMake is able to build C program.
+This is a default behaviour but, in the standard configuration, ElfMake
+can perform several tasks, also named //goals//:
+  * ''all'' is the default applied goal and build what is required,
+  * ''clean'' removes all temporaries files like object files,
+  * ''config'' builds the configuration,
+  * ''distclean'' removes all produced files, i.e., object and executable files,
+  * ''install'' performs the installation of files in the system, i.e. installation of ''hello'' in ''/usr/bin''.
+
+To invoke a specific goal, just pass it as an argument in the command line:
+<code sh>
+> ./make.py clean
+</code>
+
+ElfMake represents the building process of an application as set of rules
+made of three components (//targets//, //dependencies//, //actions//).
+A rule means that, to build the //targets// files, we need first
+the //dependencies// file and that the action //actions// (usually shell commands)
+have to be performed. This allows creating a hierarchy between the different
+actions to build the program and to only construct targets whose dependencies
+changed.
+
+The ''all'' goal belongs in fact to a rule whose dependencies are the set
+of program to build. There is no action. When the ''all'' goal is invoked,
+automatically all its dependencies, the programs, are built. But you may
+also ask for the building of a program by specifying in the command line:
+<code sh>
+> ./make.py hello
+</code> 
+
+
+===== Customizing the compilation =====
+
+==== Selecting a different build directory ====
+
+Variable 'BPATH' is used to select in which directory to build files.
+As a default, the build path is the top-level directory (containing the
+main script). To change the build directory, one has to reconfigure
+the project with a command like:
+<code bash>
+> ./make.py config BPATH=BUILD_DIRECTORY
+</bash>
+
+And to replace //BUILD_DIRECTORY// by the absolute or the relative path
+to the build directory.
+
+Anotehr way to customize the build directory after configuration
+is to edit the file ''config.py'' and to add a line like:
+<code python>
+BPATH = "BUILD_DIRECTORY"
+</code>
+
+
+====== Environment Management ======
+
+ElfMake work is based on the concept of environment: basically, an environment
+is map associating symbols or identifier with values, this association
+is called a variable. The values may
+be any Python value but are usually strings or list of strings: this comes
+from the fact that most actions are translated to calls to line commands.
+
+In ElfMake, all objects are environments: files, script, etc. In addition,
+the environment are stacked: each environment has as parent environment
+the one where it is created. For files, the aprent environment is the one
+of the script using the file. This stack is used to resolve variables
+from the higher enviroment to the lower one in the stack. Therefore,
+the script behaviour or variables are determined by the stack of script
+including it providing a modular flavor to ElfMake. The lowest environment
+is the OS variable environment meaning that the configuraton may be
+provided by defining variable in your preferred shell.
+
+To define a variable in your script environment is as easy as defined
+a variable in a Python program:
+<code python>
+CC="my_c_compiler"
+</code>
+
+Unfortunately, accessing the environment stack is not as easy.
+The code below:
+<code python>
+print "my compiler is %s" % CC
+</code>
+Will only resolve ''CC'' in the current environment (as usually in Python).
+To use the stack of environment, you have to type:
+<code python>
+print "my compiler is %s" % get("CC")
+</code>
+In addition, you can also provide a default value as second argument:
+<code python>
+print "my compiler is %s" % get("CC", "cc")
+</code>
+
+To define the variable in the environment of a specific file, you can
+use the ''file''() function:
+<code python>
+file("my_file.c")["CFLAGS"] = "-O2"
+</code>
+
+Finally, ElfMake provide explicit access to some environment information:
+  * curenv -- current environment,
+  * envstack -- stack of environment as a sequence.
+
+If you use the ''env'' module:
+<code python>
+import elfmake.env as env
+</code>
+
+The following environment are available:
+  * ''env.osenv'' -- environment representing OS variables,
+  * ''env.elfenv'' -- environment contaning built-in definitions,
+  * ''env.confenv'' -- environment containing the configuration,
+  * ''env.topenv'' -- environment of the top-level script,
+  * ''env.cenv'' -- current environment.
+
+
+====== Configuration ======
+
+
+====== Basic Commands and Variable ======
+
+''elfmake'' Python package provides basic command and variable that
+help the writing of scripts.
+
+===== Environment Management =====
+
+  * ''append''(//id//, //v//) -- append a value to an existing one.
+  * ''curenv'' -- current environment (of the current script).
+  * ''defined''(//id//) -- test if the identifier //id// is defined.
+  * ''envstack'' -- stack of environment.
+  * ''curdir'' -- current directory (of the current script).
+  * ''get''(//id// [, //def//]) -- get a value of current environment.
+  * ''pop_env''() -- pop the current environment.
+  * ''push_env''(environment) -- push a new environment.
+  * ''set''(//id//, //v//) -- set a variable in the current environment.
+  * ''subdir''(//dir//) -- process script file of the given directory.
+
+
+===== File Management =====
+
+Resources to examine files includes:
+  * ''file''(//path//) -- get ElfMake file matching the given path.
+  * ''glob''(//RE//) -- select file list using the given path regular expression.
+  * ''isdir''(//path//) -- test if given path designs a directory.
+  * ''join''(//p1//, //p2//) -- join two paths according OS rules.
+  * ''listdir''(//path//) -- build a list as the content of //path// directory.
+  * ''path''(//path//) -- convert string to path.
+  * ''suffix''(//path//) -- get extension of the file designed by the path.
+
+Actions to work on files includes:
+  * ''grep''(//RE//, //command//) -- execute given command and perform regular recognition on given output.
+  * ''mkdir''(//path//) -- create the directory of the path.
+  * ''remove''(//list//) -- remove directories and files of the list.
+
+===== Goals and Rules =====
+
+The following commands may be used to manage goals and rules:
+  * ''goal''(//goal//, //deps//, //actions//) -- build a new goal (not matching a real file).
+  * ''rule''(//ress//, //deps//, //actions//) -- build a specific rule for a particular file.
+
+The following variables are used:
+  * ''DESCRIPTION'' put on a goal file, provide description for the goal for option "-l".
+
+===== Actions =====
+
+In the previous goals and rules, actions may be object of type Action but also strings
+that are automatically promoted as ''shell'' actions. Yet, other actions exists:
+
+  * ''fun''(//function//) -- build an action like a call to the given function.
+  * ''shell''(//commands//) -- build a a shell action.
+
+
+====== Special Variables ======
+
+  * ''BPATH'' -- path used to build files in (as default, the directory containing the script).
+
+
+
+====== Standard Environment ======
+
+The standard provides a consistant environment to let other modules
+interact in a convenient. It is not mandatory (you can provide your own
+standard module if needed) but this may make interaction with other modules
+more difficult.
+
+To use it:
+<code python>
+import elfmake.std as std
+</code>
+
+The standard module provides the following  goals:
+  * ''all'' -- compiles all,
+  * ''clean'' -- clean all produced files,
+  * ''distclean'' -- clean all files including configuration and .pyc files,
+  * ''config'' -- launch the configuration lookup.
+
+These goals are using the following variables:
+  * ''ALL'' -- list of targets to build,
+  * ''CLEAN'' -- list of files to clean up,
+  * ''DISTCLEAN'' -- list of files to clean in addition to ''CLEAN'',
+  * ''INSTALL_PROGRAMS'' -- list of programs to install,
+  * ''INSTALL_LIBS'' -- list of libraries to install,
+  * ''INSTALL_DATA'' -- list of data files to install.
+
+
+====== Standard Modules ======
+
+===== C Module =====
+
+The C module is dedicated to the compilation of C or C++ files. To use it:
+<code python>
+import elfmake.c as c
+</code>
+
+This module provides generator from .c, .cpp, .c++, .cxx or .C source files
+to object .o files.
+
+The following rules are available:
+  * c.program(name, sources) -- build a C/C++ program from a list of sources.
+  On Windows, .exe is added automatically to the program name.
+
+This module uses the following variables to control the compilation:
+  * ''CC'' -- C compiler, looked up at configuration (may be customized in script or source file),
+  * ''CXX'' -- C++ compiled, look up at configuration (may be customized in script or in source file),
+  * ''CFLAGS'' -- flags for C compilation (may be customized in script or in source file),
+  * ''CXXFLAGS'' -- flags for C++ compilation (may be customized in script or in source file),
+  * ''LDFLAGS'' -- link flags for C/C++ program building (may be customized in script or in program file).
+
