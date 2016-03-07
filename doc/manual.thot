@@ -1,17 +1,17 @@
 @use dokuwiki
-@TITLE=ElfMake Manual
+@TITLE=Maat Manual
 @AUTHORS=H. Cassé <hugues.casse@laposte.net>
 @VERSION=0.1
 @LANG=en_EN
 
-@ELFMAKE=//ElfMake//
+@MAAT=**//Maat//**
 
 ====== Introduction ======
 
-ElfMake is the result of my frustation in the use of GnuMake,
+@(MAAT) is the result of my frustation in the use of GnuMake,
 CMake and AutoTools. There are lots of alternatives tools (particularly
 for GnuMake) like Scons, AAP, Ant, etc but they don't maintain
-the brilliant of recipes (also known as rules).
+the nice principle of recipes (also known as rules).
 
 A recipe is formed of three components:
   * the target files that the products of the rule,
@@ -29,15 +29,15 @@ Yet, GnuMake (and its ancestors) has two main drawbacks:
   * unefficient solving process of generic recipes causing combinatory explosion of file lookup,
   * inadequate script layer that makes the task of building automatically recipes exceedingly hard and non-modular.
 
-ElfMake try to solve both problems while keeping the concept of generic recipes.
+@(MAAT) try to solve both problems while keeping the concept of generic recipes.
 The first issue is solved by reducing the domain of lookup for automatic recipes:
 only dependency strings between a source file and its final object are considereed.
 The second issue is simply achieved using Python as the script system.
-Fortunately, Python alone is not enough and ElfMake provides lots of common facilities
+Fortunately, Python alone is not enough and @(MAAT) provides lots of common facilities
 to create and control recipes.
 
 About building systems like CMake or BuildTools, the integration inside
-ElfMake comes from the easy statement that there is no reason to separate
+@(MAAT) comes from the easy statement that there is no reason to separate
 building configuration and building itself. Moreover, the building scripts,
 where programs and sources are defined, have a better knowledge of what is
 done and therefore can identify which are the requirements for building
@@ -60,12 +60,12 @@ int main(void) {
 }
 </code>
 
-Our goal is to generate an executable for our program. With ElfMake,
+Our goal is to generate an executable for our program. With @(MAAT),
 just create a new file named ''make.py'' with the following content:
 
 <code py>
-from elfmake import *
-from elfmake import c
+from maat import *
+from maat import c
 
 c.program("hello", ["hello.c"])
 </code>
@@ -109,8 +109,8 @@ Then, the make process is simply restarted by:
 
 ===== Goals =====
 
-Previous section has exposed how ElfMake is able to build C program.
-This is a default behaviour but, in the standard configuration, ElfMake
+Previous section has exposed how @(MAAT) is able to build C program.
+This is a default behaviour but, in the standard configuration, @(MAAT)
 can perform several tasks, also named //goals//:
   * ''all'' is the default applied goal and build what is required,
   * ''clean'' removes all temporaries files like object files,
@@ -123,7 +123,7 @@ To invoke a specific goal, just pass it as an argument in the command line:
 > ./make.py clean
 </code>
 
-ElfMake represents the building process of an application as set of rules
+@(MAAT) represents the building process of an application as set of rules
 made of three components (//targets//, //dependencies//, //actions//).
 A rule means that, to build the //targets// files, we need first
 the //dependencies// file and that the action //actions// (usually shell commands)
@@ -150,7 +150,7 @@ main script). To change the build directory, one has to reconfigure
 the project with a command like:
 <code bash>
 > ./make.py config BPATH=BUILD_DIRECTORY
-</bash>
+</code>
 
 And to replace //BUILD_DIRECTORY// by the absolute or the relative path
 to the build directory.
@@ -164,19 +164,19 @@ BPATH = "BUILD_DIRECTORY"
 
 ====== Environment Management ======
 
-ElfMake work is based on the concept of environment: basically, an environment
+@(MAAT) work is based on the concept of environment: basically, an environment
 is map associating symbols or identifier with values, this association
 is called a variable. The values may
 be any Python value but are usually strings or list of strings: this comes
 from the fact that most actions are translated to calls to line commands.
 
-In ElfMake, all objects are environments: files, script, etc. In addition,
+In @(MAAT), all objects are environments: files, script, etc. In addition,
 the environment are stacked: each environment has as parent environment
 the one where it is created. For files, the aprent environment is the one
 of the script using the file. This stack is used to resolve variables
 from the higher enviroment to the lower one in the stack. Therefore,
 the script behaviour or variables are determined by the stack of script
-including it providing a modular flavor to ElfMake. The lowest environment
+including it providing a modular flavor to @(MAAT). The lowest environment
 is the OS variable environment meaning that the configuraton may be
 provided by defining variable in your preferred shell.
 
@@ -207,13 +207,13 @@ use the ''file''() function:
 file("my_file.c")["CFLAGS"] = "-O2"
 </code>
 
-Finally, ElfMake provide explicit access to some environment information:
+Finally, @(MAAT) provide explicit access to some environment information:
   * curenv -- current environment,
   * envstack -- stack of environment as a sequence.
 
 If you use the ''env'' module:
 <code python>
-import elfmake.env as env
+import maat.env as env
 </code>
 
 The following environment are available:
@@ -229,7 +229,7 @@ The following environment are available:
 
 ====== Basic Commands and Variable ======
 
-''elfmake'' Python package provides basic command and variable that
+@(MAAT) Python package provides basic command and variable that
 help the writing of scripts.
 
 ===== Environment Management =====
@@ -249,7 +249,7 @@ help the writing of scripts.
 ===== File Management =====
 
 Resources to examine files includes:
-  * ''file''(//path//) -- get ElfMake file matching the given path.
+  * ''file''(//path//) -- get @(MAAT) file matching the given path.
   * ''glob''(//RE//) -- select file list using the given path regular expression.
   * ''isdir''(//path//) -- test if given path designs a directory.
   * ''join''(//p1//, //p2//) -- join two paths according OS rules.
@@ -295,7 +295,7 @@ more difficult.
 
 To use it:
 <code python>
-import elfmake.std as std
+import maat.std as std
 </code>
 
 The standard module provides the following  goals:
@@ -319,7 +319,7 @@ These goals are using the following variables:
 
 The C module is dedicated to the compilation of C or C++ files. To use it:
 <code python>
-import elfmake.c as c
+import maat.c as c
 </code>
 
 This module provides generator from .c, .cpp, .c++, .cxx or .C source files

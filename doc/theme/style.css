@@ -32,26 +32,28 @@ background: #FEAD1D url(images/header.jpg) no-repeat;
 text-align: right;
 }
 #header h1 { 
-font-size: 25px;
-letter-spacing: -1px;
-padding: 120px 40px 0 0;
-color: #fff;
+	font-size: 32px;
+	letter-spacing: -1px;
+	padding: 100px 100px 0 0;
+	color: #fff;
+	text-shadow: 4px 4px 4px #444444;
 }
 #header h1 a { 
-color: #fff;
-text-decoration: none;
-font-weight: 100;
-letter-spacing: -2px;
+	color: #fff;
+	text-decoration: none;
+	font-weight: 700;
+	letter-spacing: -2px;
 }
 #header h1 a:hover {
-color: #111;
+	color: #111;
 }
 #header h2 {
-font-size: 18px;
-color: #fff;
-padding: 3px 40px 0 0;
-letter-spacing: -1px;
-font-weight: 100;
+	font-size: 24px;
+	color: #fff;
+	padding: 16px 100px 0 0;
+	letter-spacing: -1px;
+	font-weight: 700;
+	text-shadow: 4px 4px 4px #444444;
 }
 
 
@@ -112,7 +114,10 @@ font-weight: 100;
 div .listing {
 	padding-top: 4px;
 	padding-bottom: 8px;
-	padding-left: 16px;
+	margin-left: 16px;
+	padding-left: 4px;
+	border-left: 4px solid #F6B26B;
+	margin-bottom: 4px;
 } 
 
 /* TOC */
@@ -203,3 +208,6 @@ padding-bottom: 10px;
 }
 #footer a { color: #fff; }
 #footer a:hover { color: #111; }
+
+
+
