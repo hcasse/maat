@@ -130,9 +130,8 @@ class Recipe:
 			f.recipe = self
 			f.is_target = True
 		self.env = env.cenv
-		if hasattr(ress[0], 'cwd'):
-			self.cwd = ress[0].cwd
-		else:
+		self.cwd = ress[0].get('cwd')
+		if not self.cwd:
 			self.cwd = self.env.path
 
 	def action(self, ctx):

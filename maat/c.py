@@ -5,12 +5,18 @@ import maat.recipe as recipe
 import maat.action as action
 import maat.std as std
 
+# internals
 need_c = False
 need_cxx = False
 cpp_ext = [".cpp", ".cxx", ".C"]
 c_comps = ["gcc", "cc"]
 cxx_comps = ["g++", "c++"] 
 
+# default configuration
+env.rootenv.CC = "cc"
+env.rootenv.CXX = "c++"
+
+# convenient
 def is_cxx(deps):
 	for dep in deps:
 		if dep.recipe and dep.recipe.deps:
@@ -18,21 +24,19 @@ def is_cxx(deps):
 				return True
 	return False
 	
-
 def select_linker(prog, deps):
 	if is_cxx(deps):
-		return prog.get("CXX", "c++")
+		return prog.CXX
 	else:
-		return prog.get("CC", "cc")
-
+		return prog.CC
 
 # generic recipes
 def comp_c_to_o(r):
-	return [r.ress[0].get("CC", "cc"), r.ress[0].get("CFLAGS"), "-o", r.ress[0], "-c", r.deps[0]]
+	return [r.ress[0].CC, r.ress[0].CFLAGS, "-o", r.ress[0], "-c", r.deps[0]]
 def comp_cxx_to_o(r):
-	return [r.ress[0].get("CXX", "c++"), r.ress[0].get("CXXFLAGS"), r.ress[0].get("CFLAGS"), "-o", r.ress[0], "-c", r.deps[0]]
+	return [r.ress[0].CXX, r.ress[0].CXXFLAGS, r.ress[0].CFLAGS, "-o", r.ress[0], "-c", r.deps[0]]
 def link_program(r):
-	return [select_linker(r.ress[0], r.deps), r.ress[0].get("CFLAGS"), r.ress[0].get("CXXFLAGS"), "-o", r.ress[0], r.deps, r.ress[0].get("LDFLAGS")]
+	return [select_linker(r.ress[0], r.deps), r.ress[0].CFLAGS, r.ress[0].CXXFLAGS, "-o", r.ress[0], r.deps, r.ress[0].LDFLAGS]
 
 gen_command(".o", ".c",   comp_c_to_o)
 gen_command(".o", ".cxx", comp_cxx_to_o)

@@ -194,17 +194,13 @@ print "my compiler is %s" % CC
 Will only resolve ''CC'' in the current environment (as usually in Python).
 To use the stack of environment, you have to type:
 <code python>
-print "my compiler is %s" % get("CC")
-</code>
-In addition, you can also provide a default value as second argument:
-<code python>
-print "my compiler is %s" % get("CC", "cc")
+print "my compiler is %s" % curenv.CC
 </code>
 
 To define the variable in the environment of a specific file, you can
 use the ''file''() function:
 <code python>
-file("my_file.c")["CFLAGS"] = "-O2"
+file("my_file.c").CFLAGS = "-O2"
 </code>
 
 Finally, @(MAAT) provide explicit access to some environment information:
@@ -218,7 +214,7 @@ import maat.env as env
 
 The following environment are available:
   * ''env.osenv'' -- environment representing OS variables,
-  * ''env.elfenv'' -- environment contaning built-in definitions,
+  * ''env.rootenv'' -- environment contaning built-in definitions,
   * ''env.confenv'' -- environment containing the configuration,
   * ''env.topenv'' -- environment of the top-level script,
   * ''env.cenv'' -- current environment.

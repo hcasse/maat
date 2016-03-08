@@ -77,7 +77,10 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 			if a == "config":
 				do_config = True
 		else:
-			env.elfenv.set(p[0], p[1])
+			env.rootenv.set(p[0], p[1])
+
+	# load configuration
+	config.load(do_config)
 
 
 # make process
@@ -131,11 +134,14 @@ def make_work(ctx = io.Context()):
 	"""Perform the real build."""
 	
 	# are we at the top make.py?
+	#print "DEBUG: cenv = %s" % env.cenv.name
+	#print "DEBUG: topenv = %s" % env.topenv.name
+	#print env.cenv.__dict__
 	if env.cenv <> env.topenv:
 		return
 	
 	# load configuration
-	config.load(do_config)
+	#config.load(do_config)
 	
 	# configuration action
 	if do_config:
@@ -224,7 +230,7 @@ def subdir(dir):
 		
 	# push new environment
 	name = (curenv.name + "_" + str(dir)).replace(".", "_")
-	push_env(env.MapEnv(name, dpath, curenv))
+	push_env(env.ScriptEnv(name, dpath, curenv, { }))
 	
 	# load make.py
 	mod = imp.load_source(name, str(path))

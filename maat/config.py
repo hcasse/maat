@@ -71,7 +71,7 @@ def make(ctx = io.Context()):
 	in_config = True
 
 	# look for a build path
-	bpath = env.elfenv["BPATH"]
+	bpath = env.rootenv["BPATH"]
 	if bpath:
 		env.confenv["BPATH"] = bpath
 

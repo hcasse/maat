@@ -112,8 +112,8 @@ def curdir():
 # environments
 class Env:
 	"""Base class of environments."""
-	path = None
-	name = None
+	path = ""
+	name = ""
 	
 	def __init__(self, name, path = topdir):
 		self.name = name
@@ -153,6 +153,19 @@ class Env:
 	def get_here(self, id, default = None):
 		"""Get a value uniquely from the current environment."""
 		return default
+	
+	def __getattr__(self, name):
+		#print "DEBUG: %s.getattr(%s)" % (self.name, name)
+		return self.get(name)
+
+	def __repr__(self):
+		return "env(%s)" % self.name
+
+	def __eq__(self, e):
+		return id(self) == id(e)
+
+	def __ne__(self, e):
+		return id(self) <> id(e)
 
 
 OS_SPECS = {
@@ -168,9 +181,11 @@ class OSEnv(Env):
 	def get(self, id, default = None):
 		v = os.getenv(id)
 		if v and OS_SPECS.has_key(id):
-			return OS_SPECS[id](v)
+			r = OS_SPECS[id](v)
 		else:
-			return os.getenv(id)
+			r = os.getenv(id)
+		#print "DEBUG: return OS with %s = %s" % (id, r)
+		return r
 	
 	def set(self, id, val):
 		#os.putenv(id, to_string(val))
@@ -201,10 +216,14 @@ class ParentEnv(Env):
 		self.parent = parent
 	
 	def get(self, id, default = None):
+		x = self.name
+		#print "DEBUG: ParentEnv(%s).get(%s)" % (x, id)
 		if self.parent == None:
-			return default
+			r = default
 		else:
-			return self.parent.get(id, default)
+			r = self.parent.get(id, default)
+		#print "DEBUG: ending %s" % x
+		return r
 	
 	def append(self, id, val):
 		self.parent.append(id, val)
@@ -226,43 +245,62 @@ class ParentEnv(Env):
 
 class MapEnv(ParentEnv):
 	"""Environment with its own map."""
+	
+	def __init__(self, name, path, parent = None):
+		ParentEnv.__init__(self, name, path, parent)
+	
+	def get(self, id, default = None):
+		try:
+			r = self.__dict__[id]
+			#print "DEBUG: %s: FOUND %s as %s" % (self.name, id, r)
+			return r
+		except KeyError, e:
+			#print "DEBUG: %s: NOT_FOUND %s" % (self.name, id)
+			return ParentEnv.get(self, id, default)
+	
+	def set(self, id, val):
+		self.__dict__[id] = val
+
+	def is_def(self, id):
+		return self.__dict__.has_key(id) or ParentEnv.is_def(self, id)
+
+	def __str__(self):
+		return "%s (%s)" % (self.name, self.path)
+
+	def get_here(self, id, default = None):
+		try:
+			return self.__dict__[id]
+		except KeyError, e:
+			return default
+
+
+class ScriptEnv(ParentEnv):
+	"""Environment reflecting a script make.py."""
 	map = None
 	
 	def __init__(self, name, path, parent = None, map = None):
+		#print "DEBUG: SCRIPT(%s, %s)" % (name, id(map))
+		assert map <> None
 		ParentEnv.__init__(self, name, path, parent)
-		if map:
-			self.map = map
-		else:
-			self.map = { }
+		self.map = map
+		#self.__setattr__ = self.my_setattr
 	
 	def get(self, id, default = None):
 		try:
 			r = self.map[id]
+			#print "DEBUG: script %s: FOUND %s as %s" % (self.name, id, r)
 			return r
 		except KeyError, e:
+			#print "DEBUG: script %s: NOT_FOUND %s" % (self.name, id)
 			return ParentEnv.get(self, id, default)
 	
 	def set(self, id, val):
+		#print "DEBUG: %s.set(%s, %s)" % (self.name, id, str(val)[:min(20, len(str(val)))])
 		self.map[id] = val
 
 	def is_def(self, id):
 		return self.map.has_key(id) or ParentEnv.is_def(self, id)
 
-	def append(self, id, val):
-		if not self.append_rec(id, val):
-			self.set(id, val)
-	
-	def append_rec(self, id, val):
-		if self.map.has_key(id):
-			old = self.get(id)
-			if isinstance(old, list):
-				old.append(val)
-			else:
-				self.set(id, old + val)
-			return True
-		else:
-			return ParentEnv.append_rec(self, id, val)
-	
 	def __str__(self):
 		return "%s (%s)" % (self.name, self.path)
 
@@ -272,10 +310,17 @@ class MapEnv(ParentEnv):
 		except KeyError, e:
 			return default
 
+	def __setattr__(self, id, val):
+		#print "DEBUG: %s.setattr(%s, %s)" % (self.name, id, str(val)[:min(20, len(str(val)))])
+		if not self.__dict__.has_key("done") or self.__dict__.has_key(id):
+			self.__dict__[id] = val
+		else:
+			self.map[id] = val
+
 
 # environment definitons
 osenv = OSEnv()
-elfenv = MapEnv("builtin", topdir, osenv, sys.modules["maat"].__dict__)
-confenv = MapEnv("config", topdir, elfenv)
-topenv = MapEnv("main", topdir, confenv, sys.modules['__main__'].__dict__)
+rootenv = MapEnv("builtin", topdir, osenv)	#, sys.modules["maat"].__dict__)
+confenv = ScriptEnv("config", topdir, rootenv, { })
+topenv = ScriptEnv("main", topdir, confenv, sys.modules['__main__'].__dict__)
 cenv = topenv		# current environment

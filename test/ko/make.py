@@ -1,7 +1,5 @@
 from maat import *
 import maat.c as c
 
-CC = "gcc"
+CC = "cc"
 c.program("ko", ["ko.c"])
-
-#make()

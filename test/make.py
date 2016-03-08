@@ -1,12 +1,15 @@
 #!/usr/bin/python
 import maat.c as c
-import maat as m
+from maat import *
 
 CFLAGS = "-g3"
 
-m.file("main.o").set("CC", "cc")
+file("main.o").CC = "cc"
+file("main.o").CFLAGS = "-O2"
 
 c.program("main", ["main.c", "ok/ok.c"])
-m.subdir("ko")
+subdir("ko")
 
-#m.make()
+CFLAGS = "-O1"
+
+print "my compiler is %s" % curenv.CC
