@@ -16,6 +16,7 @@ import sys
 
 
 # global variables
+version = "0.3"
 topdir = env.topdir	# top directory
 todo = []			# goals to do
 verbose = False		# verbose mode
@@ -60,10 +61,17 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser.add_argument('free', type=str, nargs='*', metavar="goal", help="goal or Definitions")
 	parser.add_argument('-v',  '--verbose', action="store_true", default=False, help="verbose mode")
 	parser.add_argument('-l', '--list', action="store_true", default=False, help="display available goals")
+	parser.add_argument('-V', '--version', action="store_true", default=False, help="display the current version")
 	parser.add_argument('-p', '--print-data-base', action="store_true", default=False, help="print the recipe database")
 
 	# get arguments
 	args = parser.parse_args()
+	if args.version:
+		print \
+"""Maat V%s\nCopyright (c) 2016 H. Casse <hugues.casse@laposte.net>
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" % version
+		exit(0)
 	verbose = args.verbose
 	do_config = False
 	do_list = args.list

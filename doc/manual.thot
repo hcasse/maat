@@ -44,7 +44,7 @@ done and therefore can identify which are the requirements for building
 the application.
 
 
-====== Simple Recipe ======
+====== Writing Scripts ======
 
 ===== Hello, World! =====
 
@@ -90,7 +90,7 @@ Hello, World!
 Now, you can modify your source ''hello.c'' or add new source file to your program,
 you have just to invoke ''python make.py'' to get your program re-compiled and,
 of course, only the modified sources are re-compiled. But you make things
-a bit more automatic. Add in front of ''make.py'' the line:
+a bit more automatic. Add as first line of ''make.py'':
 
 <code py>
 #!/usr/bin/python
@@ -140,11 +140,10 @@ also ask for the building of a program by specifying in the command line:
 </code> 
 
 
-===== Customizing the compilation =====
 
-==== Selecting a different build directory ====
+===== Selecting a different build directory =====
 
-Variable 'BPATH' is used to select in which directory to build files.
+Variable ''BPATH'' is used to select in which directory to build files.
 As a default, the build path is the top-level directory (containing the
 main script). To change the build directory, one has to reconfigure
 the project with a command like:
@@ -325,10 +324,24 @@ The following rules are available:
   * c.program(name, sources) -- build a C/C++ program from a list of sources.
   On Windows, .exe is added automatically to the program name.
 
-This module uses the following variables to control the compilation:
-  * ''CC'' -- C compiler, looked up at configuration (may be customized in script or source file),
-  * ''CXX'' -- C++ compiled, look up at configuration (may be customized in script or in source file),
-  * ''CFLAGS'' -- flags for C compilation (may be customized in script or in source file),
-  * ''CXXFLAGS'' -- flags for C++ compilation (may be customized in script or in source file),
-  * ''LDFLAGS'' -- link flags for C/C++ program building (may be customized in script or in program file).
+This module uses the following variables to control the compilation.
+Notice that between brackets are noted the place they can apply:
+source file, object file, program, etc.
+  * ''CC'' -- C compiler, looked up at configuration [object, program],
+  * ''CXX'' -- C++ compiled, look up at configuration [object, program],
+  * ''CFLAGS'' -- flags for C compilation [object, source],
+  * ''CXXFLAGS'' -- flags for C++ compilation [object, source],
+  * ''LDFLAGS'' -- link flags for C/C++ program building [program].
 
+The example show to define CFLAGS for all objects and how to specialize
+for a particular object:
+<code python>
+from maat import *
+from maat import c
+
+CFLAGS = "-g3"
+file("main.o").CFLAGS = CFLAGS + " -O2"
+file("prog").LDFLAGS = "-lm"
+
+c.program("prog", ["main.c", "mod1.c", "mod2.c"])
+</code>
