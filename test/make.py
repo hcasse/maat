@@ -7,9 +7,8 @@ CFLAGS = "-g3"
 file("main.o").CC = "cc"
 file("main.o").CFLAGS = "-O2"
 
-c.program("main", ["main.c", "ok/ok.c"])
+c.program("main", ["main.c", "ok/ok.c"], LIBS = ["m", "mylib"])
 subdir("ko")
-
-CFLAGS = "-O1"
+subdir("lib")
 
 print "my compiler is %s" % curenv.CC

@@ -43,6 +43,17 @@ where programs and sources are defined, have a better knowledge of what is
 done and therefore can identify which are the requirements for building
 the application.
 
+{{Selanit-Maat-800px.png?150 }}
+**Maat** or **Ma'at** was the ancient Egyptian
+concept of truth, balance, order, harmony, law, morality, and justice.
+Maat was also personified as a goddess regulating the stars, seasons,
+and the actions of both mortals and the deities, who set the order of 
+he universe from chaos at the moment of creation. 
+
+From [[https://en.wikipedia.org/wiki/Maat|Wikipedia]].
+
+@(MAAT) is delivered under [[http://www.gnu.org/licenses/gpl.html|GPL v3]]
+license and copyright by H. Cassé <hugues.casse@irit.fr>.
 
 ====== Writing Scripts ======
 
@@ -308,9 +319,7 @@ These goals are using the following variables:
   * ''INSTALL_DATA'' -- list of data files to install.
 
 
-====== Standard Modules ======
-
-===== C Module =====
+====== C Module ======
 
 The C module is dedicated to the compilation of C or C++ files. To use it:
 <code python>
@@ -320,9 +329,56 @@ import maat.c as c
 This module provides generator from .c, .cpp, .c++, .cxx or .C source files
 to object .o files.
 
-The following rules are available:
-  * c.program(name, sources) -- build a C/C++ program from a list of sources.
-  On Windows, .exe is added automatically to the program name.
+
+===== Building a Program =====
+
+<code python>
+c.program(PROGRAM, [SOURCES], OPTIONS...)
+</code>
+
+Build a C/C++ program from a list of sources.
+On Windows, .exe is added automatically to the program name.
+
+//PROGRAM// is the program name.
+
+//SOURCES// is a comma separated list of source files.
+
+The //OPTIONS// may be one or several of:
+  * ''CFLAGS'' -- ''CFLAGS'' to apply to each C source,
+  * ''CXXFLAGS'' -- ''CXXFLAGS'' to apply to each C++ source,
+  * ''LDFLAGS'' -- flags to apply at link time,
+  * ''LIBS'' -- list of libraries to use.
+
+
+===== Building a Library =====
+
+<code python>
+c.lib(NAME, [SOURCES], OPTIONS...)
+</code>
+
+Build a C/C++ static library from a list of sources.
+
+//NAME// is the library name.
+
+//SOURCES// is the list of sources.
+
+The //OPTIONS// may be a combination of:
+  * ''CFLAGS'' -- ''CFLAGS'' to apply to each C source,
+  * ''CXXFLAGS'' -- ''CXXFLAGS'' to apply to each C++ source,
+  * ''PREFIX'' -- prefix of the produced library file (system default if not provided),
+  * ''SUFFIX'' -- suffix of the produced library file (system default if not provided).
+
+
+===== Library Resolution =====
+
+When a list of names is passed in the ''LIBS'' option of ''c.program'',
+the module will be perform an automatic lookup:
+  * if a C libary matches the library name, it is used and the building
+order will take into account this dependency;
+  * else the libary is considered to be part of the OS and linked with
+''-l'' opetion.
+
+===== Common Flags =====
 
 This module uses the following variables to control the compilation.
 Notice that between brackets are noted the place they can apply:
@@ -345,3 +401,14 @@ file("prog").LDFLAGS = "-lm"
 
 c.program("prog", ["main.c", "mod1.c", "mod2.c"])
 </code>
+
+
+===== Module Variables =====
+
+The following variables are provided by this module and may be used
+for your convenience (modify them at your own risk):
+  * ''EXE_SUFFIX'' -- OS executable suffix,
+  * ''LIB_PREFIX'' -- OS static library prefix,
+  * ''LIB_SUFFIX'' -- OS static library suffix.
+
+

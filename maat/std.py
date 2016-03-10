@@ -57,4 +57,4 @@ def install_default_goals():
 		elf.goal("config", [], action.FunAction(config.make))
 		elf.file("config")["DESCRIPTION"] = "build configuration"
 
-elf.post_inits.append(install_default_goals)
+elf.post_inits.append(elf.FunDelegate(install_default_goals))

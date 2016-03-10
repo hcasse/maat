@@ -167,6 +167,18 @@ class Env:
 	def __ne__(self, e):
 		return id(self) <> id(e)
 
+	def __lt__(self, e):
+		return id(self) < id(e)
+		
+	def __le__(self, e):
+		return id(self) <= id(e)
+		
+	def __gt__(self, e):
+		return id(self) > id(e)
+		
+	def __ge__(self, e):
+		return id(self) >= id(e)
+
 
 OS_SPECS = {
 	'HOME': (lambda v: Path(v)) 

@@ -15,15 +15,33 @@ import subprocess
 import sys
 
 
+class Delegate:
+	"""Delegate action (used specially for post-initialization actions)."""
+	
+	def perform(self, ctx):
+		"""Called to perform the action."""
+		pass
+
+class FunDelegate(Delegate):
+	"""Simple delegate calling a function."""
+	fun = None
+	
+	def __init__(self, fun):
+		self.fun = fun
+	
+	def perform(self, ctx):
+		self.fun()
+
+
 # global variables
-version = "0.3"
+version = "0.4"
 topdir = env.topdir	# top directory
 todo = []			# goals to do
 verbose = False		# verbose mode
 do_config = False	# configuration need to be done
 do_list = False		# list the goals
 do_print_db = False	# print the data base
-post_inits = []		# function to call just before building
+post_inits = []		# Processing to call just before building
 
 
 # environment management
@@ -128,7 +146,7 @@ def make_rec(f, ctx):
 		# perform the recipe action
 		push_env(f.recipe.env)
 		env.Path(f.recipe.cwd).set_cur()
-		ctx.print_info("Making %s" % f)
+		ctx.print_info("Making %s" % f.path.relative_to(env.topenv.path))
 		f.recipe.action(ctx)
 		pop_env()
 
@@ -142,14 +160,17 @@ def make_work(ctx = io.Context()):
 	"""Perform the real build."""
 	
 	# are we at the top make.py?
-	#print "DEBUG: cenv = %s" % env.cenv.name
-	#print "DEBUG: topenv = %s" % env.topenv.name
-	#print env.cenv.__dict__
 	if env.cenv <> env.topenv:
 		return
-	
-	# load configuration
-	#config.load(do_config)
+
+	# prepare context
+	ctx = io.Context()
+	if verbose:
+		ctx.command_ena = True
+
+	# post-initializations
+	for post in post_inits:
+		post.perform(ctx)
 	
 	# configuration action
 	if do_config:
@@ -158,13 +179,6 @@ def make_work(ctx = io.Context()):
 	# build action
 	else:
 		
-		# prepare context
-		for post in post_inits:
-			post()
-		ctx = io.Context()
-		if verbose:
-			ctx.command_ena = True
-
 		# command line services
 		if do_list:
 			services.list_goals(ctx)
@@ -248,6 +262,16 @@ def subdir(dir):
 	pop_env()
 	return mod
 
+def concat(s1, s2):
+	"""Concatenate two values, emulated as string (None is converted
+	to empty string) seperated by a space."""
+	if not s1:
+		return s2
+	elif not s2:
+		return s1
+	else:
+		return str(s1) + " " + str(s2)
+
 
 ########## shortcut to recipe ###########
 
@@ -276,7 +300,7 @@ def gen_command(res, dep, command):
 	"""Build a generator invoking a command produced by the command function.
 	The passed function must take as parameter the recipe this action is launched for.
 	This recipe provides details of the implemented rule."""
-	recipe.ActionGen(res, dep,   action.Invoke(command))
+	recipe.ActionGen(res, dep, action.Invoke(command))
 
 
 ######## file system functions ##########

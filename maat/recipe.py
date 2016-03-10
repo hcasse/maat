@@ -81,6 +81,11 @@ class File(env.MapEnv):
 			return str(path)
 
 
+def add_alias(file, name):
+	"""Add an alias for the given file with the given name."""
+	file_db[name] = file
+
+
 def get_file(path):
 	"""Get the file matching the given path in the DB. Apply
 	localisation rules relative to a particular make.py if the path
@@ -274,14 +279,21 @@ class ActionRecipe(Recipe):
 	
 	def __init__(self, ress, deps, actions):
 		Recipe.__init__(self, ress, deps)
-		self.act = action.make_actions(actions).instantiate(self)
+		self.act = action.make_actions(actions)
 
 	def action(self, ctx):
-		if self.act:
-			self.act.execute(ctx)
+		self.act.execute(ctx)
 	
 	def display_action(self, out):
 		self.act.display(out)
+
+
+class GenActionRecipe(ActionRecipe):
+	"""Recipe with action supporting generation."""
+	
+	def __init__(self, ress, deps, actions):
+		ActionRecipe.__init__(self, ress, deps, actions)
+		self.act = self.act.instantiate(self)
 
 
 class ActionGen(Gen):
@@ -293,7 +305,7 @@ class ActionGen(Gen):
 		self.action = action
 		
 	def gen(self, res, dep):
-		return ActionRecipe([res], [dep], self.action)
+		return GenActionRecipe([res], [dep], self.action)
 	
 
 def rule(ress, deps, *actions):
@@ -311,5 +323,13 @@ def goal(goal, deps, actions = action.Action()):
 		file.set_goal()
 		file.recipe = ActionRecipe(goal, deps, actions)
 		return
+
+
+def find_exact(name):
+	"""Look if an entity with exactly the given name exists and return it."""
+	try:
+		return file_db[name]
+	except KeyError, e:
+		return None
 
 	
