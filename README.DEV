@@ -63,3 +63,9 @@
 [ ] OCAML support
 [ ] Python support
 [ ] integrate a packaging system (allowing retrieval and automatically dependency build)
+
+
+===== Configuration =====
+
+[X] Add dependency system between configurations.
+ 

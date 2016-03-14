@@ -29,6 +29,11 @@ cpp_ext = [".cpp", ".cxx", ".C", ".c++"]
 c_comps = ["gcc", "cc"]
 cxx_comps = ["g++", "c++"] 
 
+# configuration
+CONFIG_CC = config.FindProgram("C compiler", "CC", ["gcc", "cc"])
+CONFIG_CXX = config.FindProgram("C++ compiler", "CXX", ["g++", "c++"])
+CONFIG_AR = config.FindProgram("library linker", "AR", ["ar"])
+
 
 # system dependent configuration
 if curenv.IS_WINDOWS:
@@ -68,13 +73,11 @@ def is_cxx(deps):
 
 def check_sources(srcs):
 	"""Check if sources contain C++ files or C file and select configuration accordingly."""
-	global need_c	
-	if not need_c:
-		need_c = contains_c(srcs)
-
-	global need_cxx
-	if not need_cxx:
-		need_cxx = contains_cxx(srcs)
+	if contains_c(srcs):
+		config.register(CONFIG_CC)
+	if contains_cxx(srcs):
+		config.register(CONFIG_CXX)
+	
 
 # commands
 def comp_c_to_o(r):
@@ -194,6 +197,10 @@ LIBS = None, RPATH = None):
 	# build objects
 	sources = [file(s) for s in sources]
 	objs = make_objects(prog.path.parent(), sources, CFLAGS, CXXFLAGS)
+	if contains_cxx(sources):
+		config.register(CONFIG_CXX)
+	else:
+		config.register(CONFIG_CC)
 	
 	# build program
 	recipe.ActionRecipe([prog], objs, Linker(prog, objs, contains_cxx(sources)))
@@ -232,6 +239,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 		todo.append(lib)
 		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)
+		config.register(CONFIG_AR)
 
 	# build dynamic library
 	if type in ["dynamic", "both"]:
@@ -247,6 +255,10 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 		todo.append(lib)
 		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)
+		if contains_cxx(sources):
+			config.register(CONFIG_CXX)
+		else:
+			config.register(CONFIG_CC)
 
 	# build main goal
 	lib = file(name)
@@ -255,13 +267,3 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 	recipe.add_alias(lib, name)
 	lib.PROVIDE_PATH = lib.path.parent()
 	lib.PROVIDE_LIB = name
-
-def configure(c):
-	if need_c:
-		config.find_program("C compiler", "CC", ["gcc", "cc"], ctx = c)
-	if need_cxx:
-		config.find_program("C++ compiler", "CXX", ["g++", "c++"], ctx = c)
-	if need_lib:
-		config.find_program("library linker", "AR", ["ar"], ctx = c)
-	
-config.register("c", configure)

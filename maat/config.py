@@ -17,24 +17,84 @@
 """Maat module providing configuration classes."""
 import env
 import imp
+import maat
 import maat.io as io
 import os.path
 import sys
 
+# Config class
+class Config:
+	"""Configuration node: it is responsible for performing a configuration
+	step and, if successful, chain with sub-configuration items."""
+	name = None
+	blocking = False
+	deps = None
+	result = None
+	
+	def __init__(self, name, blocking = False, deps = []):
+		self.name = name
+		self.blocking = blocking
+		self.deps = []
+		self.result = None
+
+	def succeed(self, msg = None):
+		"""Call to record success of the configuration."""
+		self.result = True
+		self.ctx.print_action_success(msg)
+		global updated
+		updated = True
+
+	def fail(self, msg = None):
+		"""Called to record a failed configuration."""
+		self.result = False
+		if self.blocking:
+			raise env.ElfError("cannot configure %s: %s" % self.name, msg)
+		else:
+			self.ctx.print_action_failure(msg)
+
+	def perform(self, ctx):
+		"""Call to perform the configuration of this item and of its
+		dependent configuration item."""
+		self.ctx = ctx
+		
+		# look in dependencies
+		for dep in self.deps:
+			if dep.result == None:
+				dep.perform(ctx)
+			if not dep.result:
+				fail("missing dependency on %s" % dep.name)
+		
+		# perform self configuration
+		self.configure(ctx)
+			
+	def configure(self, ctx):
+		"""Perform configuration for this item. Must call one of fail()
+		or succeed() to record configuration result."""
+		self.fail()
+	
+	def done(self):
+		"""Test if the configuration is already available."""
+		return False
+		
+
+# configuration state
 config_list = []	# list of configuration modules
 updated = False
 in_config = False
 win_list = ['win32', 'win64', 'cygwin']
 
 
+# convenient functions
 def host():
 	"""Return a string identifying the host platform.""" 
 	info = os.uname()
 	return "%s %s %s %s" % (info[0], info[1], info[2], info[4])
 
-def register(name, config):
+
+def register(config):
 	"""Function used to register a configuration."""
-	config_list.append((name, config))
+	if config not in config_list:
+		config_list.append((config))
 
 
 def load(do_config):
@@ -97,8 +157,16 @@ def make(ctx = io.Context()):
 	set_if("IS_UNIX", lambda : sys.platform not in win_list)
 
 	# launch module configuration
-	for (n, f) in config_list:
-		f(ctx)
+	todo = list(config_list)
+	for conf in config_list:
+		conf.result = None
+	while todo:
+		conf = todo.pop()
+		if conf.result == None:
+			if conf.done():
+				conf.result = True
+			else:
+				conf.perform(ctx)
 	
 	# if needed, output the configuration file
 	if updated:
@@ -114,8 +182,7 @@ def make(ctx = io.Context()):
 	# disable config mode
 	in_config = False
 
-
-def find_program(label, var, progs, paths = [], syspath = True, sysfirst = True, ctx = io.Context()):
+class FindProgram(Config):
 	"""Find the path of a program and display associated message.
 	
 	The label is displayed during the look-up, one of progs
@@ -124,54 +191,56 @@ def find_program(label, var, progs, paths = [], syspath = True, sysfirst = True,
 	
 	If the variable var already exists and is set, do nothing.
 	Else store the result in configuration environment."""
-	
-	# in config mode?
-	global in_config
-	if not in_config:
-		register (label, lambda : find_program(label, var, progs, paths, syspath, sysfirst))
-		return
-	
-	# already exists?
-	try:
-		path = env.confenv.map[var]
-		if path:
-			return False
-	except KeyError, e:
-		pass
-	
-	# ensure we have a list of programs
-	if not isinstance(progs, list):
-		progs = [str(progs)]
-	
-	# include system paths
-	if syspath:
-		spaths = os.getenv("PATH").split(os.pathsep)
-		if sysfirst:
-			lpaths = spaths + paths
-		else:
-			lpaths = paths + spaths
-	else:
-		lpaths = paths
-	
-	# lookup
-	ctx.print_action(label)
-	fpath = None
-	for path in lpaths:
-		for prog in progs:
-			ppath = os.path.join(path, prog)
-			if os.access(ppath, os.X_OK):
-				if path in paths:
-					fpath = ppath
-				else:
-					fpath = prog
-				break
-	
-	# process result
-	env.confenv.set(var, fpath)
-	if fpath:
-		ctx.print_action_success("found: %s" % fpath)
-		global updated
-		updated = True
-	else:
-		ctx.print_action_failure("not found!")
 
+	def __init__(self, label, var, progs, paths = [], syspath = True, sysfirst = True):
+		Config.__init__(self, label)
+		self.var = var
+		self.progs = maat.list_of(progs)
+		self.paths = paths
+		self.syspath = syspath
+		self.sysfirst = sysfirst
+
+	def done(self):
+		try:
+			path = env.confenv.map[self.var]
+			if path:
+				return True
+		except KeyError, e:
+			pass
+		return False
+
+	def configure(self, ctx):
+
+		# include system paths
+		if self.syspath:
+			spaths = os.getenv("PATH").split(os.pathsep)
+			if self.sysfirst:
+				lpaths = spaths + self.paths
+			else:
+				lpaths = self.paths + spaths
+		else:
+			lpaths = self.paths
+		
+		# lookup
+		ctx.print_action(self.name)
+		fpath = None
+		for path in lpaths:
+			for prog in self.progs:
+				ppath = os.path.join(path, prog)
+				if os.access(ppath, os.X_OK):
+					if path in self.paths:
+						fpath = ppath
+					else:
+						fpath = prog
+					break
+		
+		# process result
+		env.confenv.set(self.var, fpath)
+		if fpath:
+			self.succeed("found: %s" % fpath)
+		else:
+			self.fail("not found")
+
+
+def find_program(label, var, progs, paths = [], syspath = True, sysfirst = True):
+	register(FindProgram(label, var, progs, paths, syspath, sysfirst))
