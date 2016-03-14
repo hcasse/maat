@@ -50,20 +50,6 @@ def contains_c(files):
 def is_cxx(deps):
 	return contains_cxx([dep.recipe.deps[0] for dep in deps if dep.recipe])
 
-def find_lib(lib):
-	file = recipe.find_exact(lib)
-	if file <> None and file.PROVIDE_LDFLAGS:
-			return file.PROVIDE_LDFLAGS
-	else:
-		return "-l%s" % lib
-
-def make_libs(libs):
-	if not libs:
-		return []
-	if not isinstance(libs, list):
-		libs = str(libs).split()
-	return [find_lib(lib) for lib in libs]
-
 def check_sources(srcs):
 	"""Check if sources contain C++ files or C file and select configuration accordingly."""
 	global need_c	
@@ -99,7 +85,7 @@ class Linker(action.Action):
 		if self.prog.ADDED_LDFLAGS:
 			added = added + [self.prog.ADDED_LDFLAGS]
 		if self.prog.RPATH:
-			added = added + ["-Wl,-rpath='%s'" % p in list_of(self.prog.RPATH)]
+			added = added + ["-Wl,-rpath='%s'" % escape(str(p)) for p in list_of(self.prog.RPATH)]
 		return added
 	
 	def command(self):
@@ -177,7 +163,7 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 				o.CXXFLAGS = CXXFLAGS
 			if dyn:
 				o.ADDED_FLAGS = "-fPIC"
-	std.CLEAN = std.CLEAN + objs
+	std.CLEAN = std.CLEAN + [obj.path.relative_to(env.topenv.path) for obj in objs]
 	return objs
 	
 
@@ -221,13 +207,14 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 
 	# build objects
 	sources = [file(s) for s in sources]
-	objs = make_objects(curdir, sources, CFLAGS, CXXFLAGS, type in ["dynamic", "both"])
+	objs = make_objects(env.cenv.path, sources, CFLAGS, CXXFLAGS, type in ["dynamic", "both"])
 
 	# build static library
 	if type in ["static", "both"]:
 		lib = file(PREFIX + name + SUFFIX)
 		recipe.GenActionRecipe([lib], objs, action.Invoke(link_lib))
 		todo.append(lib)
+		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)
 
 	# build dynamic library
@@ -242,6 +229,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 		if RPATH:
 			prog.RPATH = RPATH
 		todo.append(lib)
+		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)
 
 	# build main goal
@@ -251,7 +239,6 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 	recipe.add_alias(lib, name)
 	lib.PROVIDE_PATH = lib.path.parent()
 	lib.PROVIDE_LIB = name
-	std.ALL.append(lib)
 
 def configure(c):
 	if need_c:

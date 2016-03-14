@@ -8,6 +8,7 @@ import imp
 import inspect
 import io
 import os
+import re
 import recipe
 import services
 import shutil
@@ -146,7 +147,8 @@ def make_rec(f, ctx):
 		# perform the recipe action
 		push_env(f.recipe.env)
 		env.Path(f.recipe.cwd).set_cur()
-		ctx.print_info("Making %s" % f.path.relative_to(env.topenv.path))
+		if f.is_goal or not f.is_phony:
+			ctx.print_info("Making %s" % f.path.relative_to(env.topenv.path))
 		f.recipe.action(ctx)
 		pop_env()
 
@@ -290,7 +292,15 @@ def list_of(args):
 		return args
 	else:
 		return [args]
-	
+
+
+ESCAPE_RE = re.compile("[() \t$'\"\[\]]")
+def escape(str):
+	"""Escape of the given string to be passed in command line
+	of the current shell."""
+	global ESCAPE_RE
+	return ESCAPE_RE.sub(lambda m: "\\" + m.group(), str)
+		
 
 ########## shortcut to recipe ###########
 
@@ -367,7 +377,7 @@ def glob(re):
 	return pyglob.glob(re)
 
 
-# compatibility functions
+######## compatibility functions ##########
 
 def mkdir(path):
 	"""Build a directory if not existing, building possibly intermediate

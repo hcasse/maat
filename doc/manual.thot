@@ -426,5 +426,29 @@ for your convenience (modify them at your own risk):
   * ''EXE_SUFFIX'' -- OS executable suffix,
   * ''LIB_PREFIX'' -- OS static library prefix,
   * ''LIB_SUFFIX'' -- OS static library suffix.
+  * ''DLIB_PREFIX'' -- OS dynamic library prefix,
+  * ''DLIB_SUFFIX'' -- OS dynamic library suffix.
 
+
+===== Providing a Dependency =====
+
+When a name is passed to the ''LIBS'' variable (on programs or
+on dynamic library), @(MAAT) performs an automatic lookup to find the
+matching library. For now, the name may be a symbol built by the @(MAAT)
+scripts or it is considered as part of the host OS (resulting in a simple
+''-l'' translation).
+
+In the former case, @(MAAT) look for a file with the matching name
+at the top-level directory. The matching file does not need to exists
+but it has to provide one or several of the following variables to
+control the linkage process:
+  * ''PROVIDE_LDFLAGS'' -- these flags are added on the link command,
+  * ''PROVIDE_PATH'' -- this(ese) path(s) are added to the list of paths
+used to retrieve libraries,
+  * ''PROVIDE_LIB'' -- this(ese) library(ies) are linked using usual
+flag ''-l'' to the built object.
+
+**Briefly, the ''PROVIDE_''//XXX// variable provide a simple way to link
+any  item (built from the script or provided by another way) with existing
+libraries and using the right linking flags.**
 

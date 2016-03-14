@@ -68,7 +68,10 @@ class File(env.MapEnv):
 	def time(self):
 		"""Get the last update time of the file."""
 		if self.is_phony:
-			return 0
+			if self.recipe:
+				return max([d.time() for d in self.recipe.deps])
+			else:
+				return 0 
 		else:
 			return self.actual().get_mod_time()
 	
