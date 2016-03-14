@@ -19,10 +19,14 @@ if curenv.IS_WINDOWS:
 	EXE_SUFFIX = ".exe"
 	LIB_PREFIX = ""
 	LIB_SUFFIX = ".lib"
+	DLIB_PREFIX = ""
+	DLIB_SUFFIX = ".dll"
 else:
 	EXE_SUFFIX = ""
 	LIB_PREFIX = "lib"
 	LIB_SUFFIX = ".a"
+	DLIB_PREFIX = "lib"
+	DLIB_SUFFIX = ".so"
 
 
 # default configuration
@@ -72,11 +76,11 @@ def check_sources(srcs):
 
 # commands
 def comp_c_to_o(r):
-	return [r.ress[0].CC, r.ress[0].CFLAGS, "-o", r.ress[0], "-c", r.deps[0]]
+	return [r.ress[0].CC, r.ress[0].CFLAGS, "-o", r.ress[0], "-c", r.deps[0], r.ress[0].ADDED_FLAGS]
 def comp_cxx_to_o(r):
-	return [r.ress[0].CXX, r.ress[0].CXXFLAGS, r.ress[0].CFLAGS, "-o", r.ress[0], "-c", r.deps[0]]
+	return [r.ress[0].CXX, r.ress[0].CXXFLAGS, r.ress[0].CFLAGS, "-o", r.ress[0], "-c", r.deps[0], r.ress[0].ADDED_FLAGS]
 
-class ProgramLinker(action.Action):
+class Linker(action.Action):
 	prog = None
 	objs = None
 	is_cxx = None
@@ -86,22 +90,24 @@ class ProgramLinker(action.Action):
 		self.objs = objs
 		self.is_cxx = is_cxx
 	
-	def command(self):
-		
-		# prepare added flags
+	def added(self):
 		added = []
 		if self.prog.ADDED_PATHS:
 			added = ["-L%s" % p for p in self.prog.ADDED_PATHS]
 		if self.prog.ADDED_LIBS:
 			added = added + ["-l%s" % l for l in self.prog.ADDED_LIBS]
 		if self.prog.ADDED_LDFLAGS:
-			added = added + self.prog.ADDED_LDFLAGS
-		
-		# perform the build
+			added = added + [self.prog.ADDED_LDFLAGS]
+		if self.prog.RPATH:
+			added = added + ["-Wl,-rpath='%s'" % p in list_of(self.prog.RPATH)]
+		return added
+	
+	def command(self):
 		if self.is_cxx:
-			return [self.prog.CXX, self.prog.CFLAGS, self.prog.CXXFLAGS, "-o", self.prog, self.objs, self.prog.LDFLAGS, added]
+			cc = [self.prog.CC, self.prog.CXXFLAGS]
 		else:
-			return [self.prog.CC, self.prog.CFLAGS, "-o", self.prog, self.objs, self.prog.LDFLAGS, added]
+			cc = self.prog.CC
+		return [cc, self.prog.CFLAGS, "-o", self.prog, self.objs, self.prog.LDFLAGS, self.added()]
 	
 	def execute(self, ctx):
 		action.invoke(self.command(), ctx)
@@ -158,22 +164,25 @@ class LibSolver(Delegate):
 		self.prog.ADDED_LDFLAGS = ldflags
 		
 
-def make_objects(dir, sources, CFLAGS, CXXFLAGS):
+def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 	"""Build the objects and their recipes and return the list of objects.
 	".o" are automatically added to CLEAN list."""
 	check_sources(sources)
 	objs = [file(recipe.gen(dir, ".o", s.path)) for s in sources]
-	if CFLAGS or CXXFLAGS:
+	if CFLAGS or CXXFLAGS or dyn:
 		for o in objs:
 			if CFLAGS:
 				o.CFLAGS = CFLAGS
 			if CXXFLAGS:
 				o.CXXFLAGS = CXXFLAGS
+			if dyn:
+				o.ADDED_FLAGS = "-fPIC"
 	std.CLEAN = std.CLEAN + objs
 	return objs
 	
 
-def program(name, sources, LDFLAGS = None, CFLAGS = None, CXXFLAGS = None, LIBS = None):
+def program(name, sources, LDFLAGS = None, CFLAGS = None, CXXFLAGS = None,
+LIBS = None, RPATH = None):
 	"""Called to build a C or C++ program."""
 	
 	# record prog file
@@ -185,39 +194,64 @@ def program(name, sources, LDFLAGS = None, CFLAGS = None, CXXFLAGS = None, LIBS 
 	objs = make_objects(prog.path.parent(), sources, CFLAGS, CXXFLAGS)
 	
 	# build program
-	recipe.ActionRecipe([prog], objs, ProgramLinker(prog, objs, contains_cxx(sources)))
+	recipe.ActionRecipe([prog], objs, Linker(prog, objs, contains_cxx(sources)))
 	if LDFLAGS:
 		prog.LDFLAGS = LDFLAGS
 	if LIBS:
 		post_inits.append(LibSolver(prog, LIBS))
+	if RPATH:
+		prog.RPATH = RPATH
 	
 	# record it
 	std.ALL.append(prog)
 	std.DISTCLEAN.append(prog)
 
 
-def lib(name, sources, CFLAGS = None, CXXFLAGS = None, PREFIX = LIB_PREFIX, SUFFIX = LIB_SUFFIX):
+def lib(name, sources, CFLAGS = None, CXXFLAGS = None, PREFIX = LIB_PREFIX, 
+SUFFIX = LIB_SUFFIX, type = "static", DYN_PREFIX = DLIB_PREFIX, DYN_SUFFIX = DLIB_SUFFIX,
+LDFLAGS =  None, LIBS = None, RPATH = None):
 	"""Called to build a static library."""
 	global need_lib
 	need_lib = True
+	todo = []
 
-	# record prog file
-	lib = file(PREFIX + name + SUFFIX)
-	recipe.add_alias(lib, name)
-	lib.PROVIDE_PATH = lib.path.parent()
-	lib.PROVIDE_LIB = name
+	# check type
+	if type not in ["static", "dynamic", "both"]:
+		raise env.ElfError("library type must be one of static (default), dynamoc or both.")
 
 	# build objects
 	sources = [file(s) for s in sources]
-	objs = make_objects(lib.path.parent(), sources, CFLAGS, CXXFLAGS)
-	
-	# build program
-	recipe.GenActionRecipe([lib], objs, action.Invoke(link_lib))
-	
-	# record it
-	std.ALL.append(lib)
-	std.DISTCLEAN.append(lib)
+	objs = make_objects(curdir, sources, CFLAGS, CXXFLAGS, type in ["dynamic", "both"])
 
+	# build static library
+	if type in ["static", "both"]:
+		lib = file(PREFIX + name + SUFFIX)
+		recipe.GenActionRecipe([lib], objs, action.Invoke(link_lib))
+		todo.append(lib)
+		std.DISTCLEAN.append(lib)
+
+	# build dynamic library
+	if type in ["dynamic", "both"]:
+		lib = file(DYN_PREFIX + name + DYN_SUFFIX)
+		recipe.ActionRecipe([lib], objs, Linker(lib, objs, contains_cxx(sources)))
+		lib.ADDED_LDFLAGS = "-shared"
+		if LDFLAGS:
+			prog.LDFLAGS = LDFLAGS
+		if LIBS:
+			post_inits.append(LibSolver(prog, LIBS))
+		if RPATH:
+			prog.RPATH = RPATH
+		todo.append(lib)
+		std.DISTCLEAN.append(lib)
+
+	# build main goal
+	lib = file(name)
+	lib.set_phony()
+	recipe.ActionRecipe([lib], todo)
+	recipe.add_alias(lib, name)
+	lib.PROVIDE_PATH = lib.path.parent()
+	lib.PROVIDE_LIB = name
+	std.ALL.append(lib)
 
 def configure(c):
 	if need_c:

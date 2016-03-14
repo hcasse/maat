@@ -262,16 +262,35 @@ def subdir(dir):
 	pop_env()
 	return mod
 
+
+
 def concat(s1, s2):
-	"""Concatenate two values, emulated as string (None is converted
-	to empty string) seperated by a space."""
+	"""Join two values, using the best type: list if one is a least,
+	string else.."""
 	if not s1:
 		return s2
 	elif not s2:
 		return s1
+	elif isinstance(s1, list):
+		if isinstance(s2, list):
+			return s1 + s2
+		else:
+			return s1 + [s2]
+	elif isinstance(s2, list):
+		return [s1] + s2
 	else:
 		return str(s1) + " " + str(s2)
 
+
+def list_of(args):
+	"""Build a list from the given argument."""
+	if not args:
+		return []
+	elif isinstance(args, list):
+		return args
+	else:
+		return [args]
+	
 
 ########## shortcut to recipe ###########
 

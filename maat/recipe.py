@@ -18,6 +18,7 @@ class File(env.MapEnv):
 	is_goal = False
 	is_target = False
 	is_sticky = False
+	is_phony = False
 	actual_path = None
 	
 	def __init__(self, path):
@@ -25,9 +26,14 @@ class File(env.MapEnv):
 		self.path = path
 		file_db[str(path)] = self
 
+	def set_phony(self):
+		"""Mark the file as phony, i.e. does not match a real file."""
+		self.is_phony = True
+
 	def set_goal(self):
 		"""Mark a file as a goal."""
 		self.is_goal = True
+		self.is_phony = True
 	
 	def set_target(self):
 		"""Mark a file as a target."""
@@ -61,14 +67,14 @@ class File(env.MapEnv):
 	
 	def time(self):
 		"""Get the last update time of the file."""
-		if self.is_goal:
+		if self.is_phony:
 			return 0
 		else:
 			return self.actual().get_mod_time()
 	
 	def younger_than(self, f):
 		"""Test if the current file is younger than the given one."""
-		if self.is_goal:
+		if self.is_phony:
 			return True
 		else:
 			return self.time() < f.time()
@@ -277,9 +283,9 @@ class ActionRecipe(Recipe):
 	"""A recipe that supports an action. object for generation."""
 	act = None
 	
-	def __init__(self, ress, deps, actions):
+	def __init__(self, ress, deps, *actions):
 		Recipe.__init__(self, ress, deps)
-		self.act = action.make_actions(actions)
+		self.act = action.make_actions(*actions)
 
 	def action(self, ctx):
 		self.act.execute(ctx)

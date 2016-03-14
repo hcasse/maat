@@ -347,7 +347,9 @@ The //OPTIONS// may be one or several of:
   * ''CFLAGS'' -- ''CFLAGS'' to apply to each C source,
   * ''CXXFLAGS'' -- ''CXXFLAGS'' to apply to each C++ source,
   * ''LDFLAGS'' -- flags to apply at link time,
-  * ''LIBS'' -- list of libraries to use.
+  * ''LIBS'' -- list of libraries to use,
+  * ''RPATH'' -- list of directories to retrieve libraries at link time
+(only on OS supporting this).
 
 
 ===== Building a Library =====
@@ -363,10 +365,24 @@ Build a C/C++ static library from a list of sources.
 //SOURCES// is the list of sources.
 
 The //OPTIONS// may be a combination of:
+  * ''type'' -- select the type of libary to build (''static'' (default)
+for static libary, ''dynamic'' for dynamic or shared library, ''both'' for both types),
   * ''CFLAGS'' -- ''CFLAGS'' to apply to each C source,
   * ''CXXFLAGS'' -- ''CXXFLAGS'' to apply to each C++ source,
-  * ''PREFIX'' -- prefix of the produced library file (system default if not provided),
-  * ''SUFFIX'' -- suffix of the produced library file (system default if not provided).
+  * ''PREFIX'' -- prefix for producing static library file (system default
+if not provided),
+  * ''SUFFIX'' -- suffix for producing static library file (system default
+if not provided).
+  * ''DYN_PREFIX'' -- prefix for producing dynamic library file (system default
+if not provided),
+  * ''DYN_SUFFIX'' -- suffix for producing dynamic library file (system default
+if not provided).
+
+The following //OPTIONS// applies only when a dynamic/shared is built:
+  * ''LDFLAGS'' -- additional link flags,
+  * ''LIBS'' -- list of libraries to link with.
+  * ''RPATH'' -- list of directories to retrieve libraries at link time
+(only on OS supporting this).
 
 
 ===== Library Resolution =====
