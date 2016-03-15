@@ -132,7 +132,7 @@ def get_file(path):
 
 def get_files(paths):
 	"""Apply get_file on straight arguments of recipes."""
-	if not paths:
+	if paths == None:
 		return []
 	if not isinstance(paths, list):
 		paths = [ paths ]
@@ -176,6 +176,8 @@ class Recipe:
 		self.display_action(out)
 		out.write("\n")
 
+	def signature(self):
+		return ""
 
 
 class FunRecipe(Recipe):
@@ -312,6 +314,9 @@ class ActionRecipe(Recipe):
 	def display_action(self, out):
 		self.act.display(out)
 
+	def signature(self):
+		return self.act.signature()
+
 
 class GenActionRecipe(ActionRecipe):
 	"""Recipe with action supporting generation."""
@@ -349,6 +354,14 @@ def goal(goal, deps, actions = action.Action()):
 		file.recipe = ActionRecipe(goal, deps, actions)
 		return
 
+def phony(name, deps):
+	"""Build a phony rule, that is, a rule without action
+	grouping several other rules in its dependencies.
+	The result is the recipe itself."""
+	a = ActionRecipe(name, deps)
+	a.ress[0].set_phony()
+	return a
+	
 
 def find_exact(name):
 	"""Look if an entity with exactly the given name exists and return it."""

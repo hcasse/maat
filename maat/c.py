@@ -262,8 +262,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 
 	# build main goal
 	lib = file(name)
-	lib.set_phony()
-	recipe.ActionRecipe([lib], todo)
+	r = recipe.phony(lib, todo)
 	recipe.add_alias(lib, name)
 	lib.PROVIDE_PATH = lib.path.parent()
 	lib.PROVIDE_LIB = name

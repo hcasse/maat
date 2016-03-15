@@ -28,7 +28,7 @@ import re
 import recipe
 import services
 import shutil
-import subprocess
+import sign
 import sys
 
 
@@ -59,6 +59,8 @@ do_config = False	# configuration need to be done
 do_list = False		# list the goals
 do_print_db = False	# print the data base
 post_inits = []		# Processing to call just before building
+maat_dir = env.topenv.path / ".maat"
+"""Temporary path for Maat files"""
 
 
 # environment management
@@ -147,6 +149,8 @@ def make_rec(f, ctx):
 				if f.younger_than(d):
 					update = True
 					break
+		if not update:
+			update = not sign.test(f)
 	
 	# if needed, perform update
 	if update:
@@ -206,6 +210,7 @@ def make_work(ctx = io.Context()):
 		# do the build
 		else:
 			try:
+				sign.load(ctx)
 				global todo
 				if not todo:
 					todo = ["all"]
@@ -213,6 +218,7 @@ def make_work(ctx = io.Context()):
 					f = recipe.get_file(a)
 					make_rec(f, ctx)
 				ctx.print_success("all is fine!");
+				sign.save(ctx)
 			except env.ElfError, e:
 				ctx.print_error(e)
 			except KeyboardInterrupt, e:
@@ -391,6 +397,17 @@ def path(p):
 def glob(re):
 	"""Select content of a directory from a filesystem regular expression."""
 	return pyglob.glob(re)
+
+def temp(name = None):
+	"""Obtain a temporary directory, usually in .maat  directory
+	of building directory. If a name is given, a sub-directory from
+	.maat is provided (and built if necessary)."""
+	p = maat_dir
+	if name:
+		p = p / name
+	if not p.exists():
+		mkdir(str(p))
+	return p
 
 
 ######## compatibility functions ##########

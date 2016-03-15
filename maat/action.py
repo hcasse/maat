@@ -90,6 +90,10 @@ class Action:
 		a.set_recipe(recipe)
 		return a
 
+	def signature(self):
+		"""compute the signature of the function as a string."""
+		return ""
+		
 
 NULL = Action()
 """Null action."""
@@ -121,6 +125,9 @@ class ShellAction(Action):
 	def clone(self):
 		return ShellAction(self.cmd, self.quiet)
 
+	def signature(self):
+		return make_line(self.cmd)
+
 
 class GroupAction(Action):
 	"""Represent a group of actions."""
@@ -144,6 +151,9 @@ class GroupAction(Action):
 		Action.set_recipe(self, recipe)
 		for a in self.actions:
 			a.set_recipe(recipe)
+	
+	def signature(self):
+		return "\n".join([a.signature() for a in self.actions])
 
 
 class FunAction(Action):
@@ -193,7 +203,7 @@ class GrepStream:
 	def write(self, line):
 		if self.exp.search(line):
 			self.out.write(line)
-		
+	
 
 class Grep(Action):
 	"""Action that performs a grep on command output."""
@@ -256,6 +266,9 @@ class Remove(Action):
 	def clone(self):
 		return Remove(self.paths, ignore_error = self.ignore_error)
 
+	def signature(self):
+		return "\n".join(["remove %s" % p for p in self.paths])
+
 
 class Move(Action):
 	"""Action of a moving file or directories to a specific directory."""
@@ -279,6 +292,9 @@ class Move(Action):
 
 	def clone(self):
 		return Move(self.paths, self.target)
+		
+	def signature(self):
+		return "\n".join(["move %s to %s" % (p, self.target) for p in self.target])
 
 
 class Invoke(Action):
@@ -299,3 +315,6 @@ class Invoke(Action):
 
 	def clone(self):
 		return Invoke(self.command)
+
+	def signature(self):
+		return make_line(self.command(self.recipe))

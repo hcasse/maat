@@ -14,12 +14,12 @@
 ===== Engine =====
 
 [ ] add automatic download of dependencies
-[ ] add file update resolution based on command matching
 [ ] add file update resolution based on file content
 [ ] add command to support file generation from variable content
 [ ] add goal to perform installation
 [ ] add goal to build a distribution (source, binary, etc)
 [ ] add parrallel run
+[X] add file update resolution based on command matching
 [X] add overload for "." to environment
 [X] add map for symbolic names (program, library, etc)
 [X] add support for building in a different directory
