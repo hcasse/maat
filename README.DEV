@@ -50,6 +50,7 @@
 [ ] add support for yacc
 [ ] add support for LLVM
 [ ] add support for VS
+[X] add support for automatic dependencies (from compiler)
 [X] add support for dynamic libraries / plugin / module
 [X] add dependency analysis
 [X] add support for static libraries
