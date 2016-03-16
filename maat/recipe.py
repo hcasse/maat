@@ -29,18 +29,17 @@ ext_db = { }		# extension database
 # base classes
 class File(env.MapEnv):
 	"""Representation of files."""
-	path = None
-	recipe = None
-	is_goal = False
-	is_target = False
-	is_sticky = False
-	is_phony = False
-	actual_path = None
 	
 	def __init__(self, path):
 		env.MapEnv.__init__(self, path.get_file() , env.cenv.path, env.cenv)
 		self.path = path
 		file_db[str(path)] = self
+		self.recipe = None
+		self.is_goal = False
+		self.is_target = False
+		self.is_sticky = False
+		self.is_phony = False
+		self.actual_path = None
 
 	def set_phony(self):
 		"""Mark the file as phony, i.e. does not match a real file."""
@@ -178,6 +177,10 @@ class Recipe:
 
 	def signature(self):
 		return ""
+	
+	def add_dep(self, dep):
+		if dep not in self.deps:
+			self.deps.append(dep)
 
 
 class FunRecipe(Recipe):

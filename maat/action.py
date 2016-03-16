@@ -19,8 +19,10 @@ the recipes."""
 
 import env
 import os
+import lowlevel
 import re
 import select
+import shutil
 import sys
 import subprocess
 
@@ -266,6 +268,8 @@ class Remove(Action):
 		return "\n".join(["remove %s" % p for p in self.paths])
 
 
+
+
 class Move(Action):
 	"""Action of a moving file or directories to a specific directory."""
 	paths = None
@@ -353,3 +357,22 @@ class Print(Action):
 	
 	def signature(self):
 		return "print(%s)" % self.msg
+
+
+class MakeDir(Action):
+	"""Action that build a directory or a chain of directories."""
+	path = None
+	
+	def __init__(self, path):
+		self.path = path
+		
+	def execute(self, ctx):
+		lowlevel.makedir(self.path)
+	
+	def display(self, out):
+		out.write("\tmakedir %s\n" % self.path)
+	
+	def signature(self):
+		return "makedir(%s)" % self.path
+
+	

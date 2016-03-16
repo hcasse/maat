@@ -32,7 +32,7 @@ In addition, it is using the following variables from the current environment:
   - VERSION -- project version.
 """
 
-import maat as elf
+import maat
 import maat.action as action
 import maat.config as config
 import maat.env as env
@@ -40,7 +40,7 @@ import maat.recipe as recipe
 import os.path
 
 ALL = []
-CLEAN = []
+CLEAN = [maat.maat_dir]
 DISTCLEAN = ["config.py", "config.pyc"]
 INSTALL_PROGRAMS = []
 INSTALL_LIBS = []
@@ -52,25 +52,25 @@ def install_default_goals():
 	# install all
 	path = env.cenv.path / "all"
 	if not recipe.file_db.has_key(path):
-		elf.goal("all", ALL)
-		elf.file("all")["DESCRIPTION"] = "build all"
+		maat.goal("all", ALL)
+		maat.file("all")["DESCRIPTION"] = "build all"
 
 	# install clean
 	path = env.cenv.path / "clean"
 	if not recipe.file_db.has_key(path):
-		elf.goal("clean", [], elf.remove(CLEAN, ignore_error = True))
-		elf.file("clean")["DESCRIPTION"] = "remove produced files"
+		maat.goal("clean", [], maat.remove(CLEAN, ignore_error = True))
+		maat.file("clean")["DESCRIPTION"] = "remove produced files"
 
 	# install distclean
 	path = env.cenv.path / "distclean"
 	if not recipe.file_db.has_key(path):
-		elf.goal("distclean", ["clean"], elf.remove(DISTCLEAN, ignore_error = True))
-		elf.file("distclean")["DESCRIPTION"] = "remove produced files and configuration files"
+		maat.goal("distclean", ["clean"], maat.remove(DISTCLEAN, ignore_error = True))
+		maat.file("distclean")["DESCRIPTION"] = "remove produced files and configuration files"
 
 	# install config
 	path = env.cenv.path / "config"
 	if not recipe.file_db.has_key(path):
-		elf.goal("config", [], action.FunAction(config.make))
-		elf.file("config")["DESCRIPTION"] = "build configuration"
+		maat.goal("config", [], action.FunAction(config.make))
+		maat.file("config")["DESCRIPTION"] = "build configuration"
 
-elf.post_inits.append(elf.FunDelegate(install_default_goals))
+maat.post_inits.append(maat.FunDelegate(install_default_goals))

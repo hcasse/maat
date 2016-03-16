@@ -172,21 +172,44 @@ class LibSolver(Delegate):
 		self.prog.ADDED_LIBS = libs
 		self.prog.ADDED_PATHS = paths
 		self.prog.ADDED_LDFLAGS = ldflags
-		
+
+def parse_dep(path):
+	try:
+		f = open(str(path), "r")
+		for l in f.xreadlines():
+			p = l.find(":")
+			if p >= 0:
+				ts = [file(t) for t in l[:p].split()]
+				ds = [file(d) for d in l[p+1:-1].split()]
+				for t in ts:
+					if t.recipe:
+						for d in ds:
+							t.recipe.add_dep(d)
+	except IOError, e:
+		pass	
 
 def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 	"""Build the objects and their recipes and return the list of objects.
 	".o" are automatically added to CLEAN list."""
 	check_sources(sources)
 	objs = [file(recipe.gen(dir, ".o", s.path)) for s in sources]
-	if CFLAGS or CXXFLAGS or dyn:
-		for o in objs:
-			if CFLAGS:
-				o.CFLAGS = CFLAGS
-			if CXXFLAGS:
-				o.CXXFLAGS = CXXFLAGS
-			if dyn:
-				o.ADDED_FLAGS = "-fPIC"
+	for o in objs:
+		if CFLAGS:
+			o.CFLAGS = CFLAGS
+		if CXXFLAGS:
+			o.CXXFLAGS = CXXFLAGS
+		added = ""
+		if dyn:
+			added = "-fPIC"
+		d = file(maat_dir / o.path.parent().relative_to_top())
+		if not d.recipe:
+			recipe.ActionRecipe([d], [], action.MakeDir(d.path))
+		o.recipe.deps.append(d)
+		df = (d.path / (o.path.get_base().get_file() + ".d"))
+		added = added + " -MMD -MF %s" % df.relative_to_cur()
+		if added:
+			o.ADDED_FLAGS = added
+		parse_dep(df)	
 	std.CLEAN = std.CLEAN + [obj.path.relative_to(env.topenv.path) for obj in objs]
 	return objs
 	
@@ -231,7 +254,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 
 	# check type
 	if type not in ["static", "dynamic", "both"]:
-		raise env.ElfError("library type must be one of static (default), dynamoc or both.")
+		raise env.ElfError("library type must be one of static (default), dynamic or both.")
 
 	# build objects
 	sources = [file(s) for s in sources]

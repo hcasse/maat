@@ -1,4 +1,4 @@
-#	MAAT top-level script
+#	MAAT environment module
 #	Copyright (C) 2016 H. Casse <hugues.casse@laposte.net>
 #
 #	This program is free software: you can redistribute it and/or modify
@@ -80,7 +80,7 @@ class Path:
 		return Path(os.path.relpath(self.path))
 
 	def relative_to_top(self):
-		return Path(os.path.relpath(self.path, env.topenv.path))
+		return Path(os.path.relpath(str(self.path), str(topenv.path)))
 
 	def relative_to(self, path):
 		return Path(os.path.relpath(self.path, path.path))

@@ -23,6 +23,7 @@ import glob as pyglob
 import imp
 import inspect
 import io
+import lowlevel
 import os
 import re
 import recipe
@@ -61,7 +62,6 @@ do_print_db = False	# print the data base
 post_inits = []		# Processing to call just before building
 maat_dir = env.topenv.path / ".maat"
 """Temporary path for Maat files"""
-
 
 # environment management
 curenv = None			# current environment
@@ -414,15 +414,7 @@ def temp(name = None):
 
 ######## compatibility functions ##########
 
-def mkdir(path):
-	"""Build a directory if not existing, building possibly intermediate
-	directories."""
-	if not os.path.isdir(path):
-		try:
-			os.makedirs(path)
-		except os.error, e:
-			io.DEF.print_error("cannot create '%s': %s" % (path, e))
-			exit(1)
+mkdir = lowlevel.makedir
 
 def grep(re, cmd, stdout = True, stderr = False):
 	"""Perform a grep on the output of the given command."""
