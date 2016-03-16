@@ -343,15 +343,17 @@ def fun(f):
 	"""Build a function action."""
 	return action.FunAction(cmd)
 
-def gen_action(res, dep, actions):
-	"""Build a generator invoking the given actions."""
-	recipe.ActionGen(res, dep, actions)
+def gen_action(res, dep, fun):
+	"""Build a generator that call the given function to get the real
+	action for the receipe. Function is called with results as first
+	parameter and dependencies as second parameter."""
+	recipe.ActionGen(res, dep, fun)
 
-def gen_command(res, dep, command):
+def gen_command(res, dep, fun):
 	"""Build a generator invoking a command produced by the command function.
 	The passed function must take as parameter the recipe this action is launched for.
 	This recipe provides details of the implemented rule."""
-	recipe.ActionGen(res, dep, action.Invoke(command))
+	recipe.ActionGen(res, dep, lambda r, d: action.Invoke(fun(r, d)))
 
 
 ######## file system functions ##########

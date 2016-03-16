@@ -199,7 +199,7 @@ class Ext:
 	"""Represent the support for a file extension."""
 	ext = None
 	gens = None
-	back = None
+	backs = None
 	
 	def __init__(self, ext):
 		self.ext = ext
@@ -258,6 +258,62 @@ class FunGen(Gen):
 		return FunRecipe(self.fun, [res], [dep])
 
 
+class ActionRecipe(Recipe):
+	"""A recipe that supports an action. object for generation."""
+	act = None
+	
+	def __init__(self, ress, deps, *actions):
+		Recipe.__init__(self, ress, deps)
+		self.act = action.make_actions(*actions)
+
+	def get_action(self):
+		return self.act
+
+	def action(self, ctx):
+		self.get_action().execute(ctx)
+	
+	def display_action(self, out):
+		self.get_action().display(out)
+
+	def signature(self):
+		return self.get_action().signature()
+
+
+class DelayedRecipe(ActionRecipe):
+	"""An action recipe extracting the action from a given function
+	but just before being run."""
+	ress = None
+	deps = None
+	fun = None
+	
+	def __init__(self, ress, deps, fun):
+		ActionRecipe.__init__(self, ress, deps)
+		self.ress = list(ress)
+		self.deps = list(deps)
+		self.fun = fun
+		self.act = None
+	
+	def get_action(self):
+		if self.act == None:
+			self.act = self.fun(self.ress, self.deps)
+		return self.act
+	
+
+class ActionGen(Gen):
+	"""A generator that build an action recipe from actions obtained
+	from a function where target and ressource are passed to."""
+	fun = None
+	
+	def __init__(self, res, dep, fun):
+		Gen.__init__(self, res, dep)
+		self.fun = fun
+	
+	def gen(self, res, dep):
+		res = get_file(res)
+		dep = get_file(dep)
+		return DelayedRecipe([res], [dep], self.fun)
+	
+
 def gen(dir, rext, dep):
 	"""Generate recipes to build res. A generation string is found between
 	file src and res. Each intermediate file has for name the kernel of res
@@ -299,44 +355,6 @@ def fix(path):
 	else:
 		return str(get_file(path))
 
-
-class ActionRecipe(Recipe):
-	"""A recipe that supports an action. object for generation."""
-	act = None
-	
-	def __init__(self, ress, deps, *actions):
-		Recipe.__init__(self, ress, deps)
-		self.act = action.make_actions(*actions)
-
-	def action(self, ctx):
-		self.act.execute(ctx)
-	
-	def display_action(self, out):
-		self.act.display(out)
-
-	def signature(self):
-		return self.act.signature()
-
-
-class GenActionRecipe(ActionRecipe):
-	"""Recipe with action supporting generation."""
-	
-	def __init__(self, ress, deps, actions):
-		ActionRecipe.__init__(self, ress, deps, actions)
-		self.act = self.act.instantiate(self)
-
-
-class ActionGen(Gen):
-	"""A recipe generator supporting simple actions."""
-	action = None
-	
-	def __init__(self, res, dep, action):
-		Gen.__init__(self, res, dep)
-		self.action = action
-		
-	def gen(self, res, dep):
-		return GenActionRecipe([res], [dep], self.action)
-	
 
 def rule(ress, deps, *actions):
 	"""Build a rule with actions."""

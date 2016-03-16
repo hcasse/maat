@@ -79,6 +79,9 @@ class Path:
 	def relative_to_cur(self):
 		return Path(os.path.relpath(self.path))
 
+	def relative_to_top(self):
+		return Path(os.path.relpath(self.path, env.topenv.path))
+
 	def relative_to(self, path):
 		return Path(os.path.relpath(self.path, path.path))
 

@@ -80,11 +80,6 @@ def check_sources(srcs):
 	
 
 # commands
-def comp_c_to_o(r):
-	return [r.ress[0].CC, r.ress[0].CFLAGS, "-o", r.ress[0], "-c", r.deps[0], r.ress[0].ADDED_FLAGS]
-def comp_cxx_to_o(r):
-	return [r.ress[0].CXX, r.ress[0].CXXFLAGS, r.ress[0].CFLAGS, "-o", r.ress[0], "-c", r.deps[0], r.ress[0].ADDED_FLAGS]
-
 class Linker(action.Action):
 	prog = None
 	objs = None
@@ -104,7 +99,7 @@ class Linker(action.Action):
 		if self.prog.ADDED_LDFLAGS:
 			added = added + [self.prog.ADDED_LDFLAGS]
 		if self.prog.RPATH:
-			added = added + ["-Wl,-rpath='%s'" % escape(str(p)) for p in list_of(self.prog.RPATH)]
+			added = added + ["-Wl,-rpath=\"%s\"" % escape(str(p)) for p in list_of(self.prog.RPATH)]
 		return added
 	
 	def command(self):
@@ -120,12 +115,22 @@ class Linker(action.Action):
 	def display(self, out):
 		out.write("\t%s\n" % action.make_line(self.command()))
 	
+def link_lib(ress, deps):
+	return [ress[0].AR, "rcs", ress[0], deps]
 
-def link_lib(r):
-	return [r.ress[0].AR, "rcs", r.ress[0], r.deps]
+	
+def make_dep_dir(r):
+	p = r.ress[0].path.parent()
+	temp(maat_dir / p.relative_to_top())
+
 
 # generic recipes
-gen_command(".o", ".c",   comp_c_to_o)
+def comp_c_to_o(ress, deps):
+	return [ress[0].CC, ress[0].CFLAGS, "-o", ress[0], "-c", deps[0], ress[0].ADDED_FLAGS]
+def comp_cxx_to_o(ress, deps):
+	return [ress[0].CXX, ress[0].CXXFLAGS, ress[0].CFLAGS, "-o", ress[0], "-c", deps[0], ress[0].ADDED_FLAGS]
+
+gen_command(".o", ".c",  comp_c_to_o)
 gen_command(".o", ".cxx", comp_cxx_to_o)
 gen_command(".o", ".cpp", comp_cxx_to_o)
 gen_command(".o", ".c++", comp_cxx_to_o)
@@ -235,7 +240,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 	# build static library
 	if type in ["static", "both"]:
 		lib = file(PREFIX + name + SUFFIX)
-		recipe.GenActionRecipe([lib], objs, action.Invoke(link_lib))
+		recipe.ActionRecipe([lib], objs, action.Invoke(link_lib([lib], objs)))
 		todo.append(lib)
 		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)

@@ -84,12 +84,6 @@ class Action:
 		"""Set the recipe implemented by the current action."""
 		self.recipe = recipe
 
-	def instantiate(self, recipe):
-		"""Build a new instance of the given action with the given recipe."""
-		a = self.clone()
-		a.set_recipe(recipe)
-		return a
-
 	def signature(self):
 		"""compute the signature of the function as a string."""
 		return ""
@@ -174,6 +168,8 @@ class FunAction(Action):
 
 
 def make_actions(*actions):
+	"""Build an action (group or single action) from various set of arguments:
+	empty, simple string, lists, etc."""
 	if not actions:
 		return Action()
 	result = []
@@ -299,22 +295,61 @@ class Move(Action):
 
 class Invoke(Action):
 	"""Action that performs an invocation on the recipe components."""
-	command = None
+	cmd = None
 
-	def __init__(self, command):
-		self.command = command
+	def __init__(self, cmd):
+		self.cmd = cmd
 
 	def execute(self, ctx):	
 		try:
-			invoke(self.command(self.recipe), ctx)
+			invoke(self.cmd, ctx)
 		except OSError, e:
 			raise env.ElfError(str(e))
 		
 	def display(self, out):
-		out.write("\t%s\n" % make_line(self.command(self.recipe)))
+		out.write("\t%s\n" % make_line(self.cmd))
 
 	def clone(self):
-		return Invoke(self.command)
+		return Invoke(self.cmd)
 
 	def signature(self):
-		return make_line(self.command(self.recipe))
+		return make_line(self.cmd)
+
+
+class Hidden(Action):
+	"""A hidden action performs the sub-action but does not display it
+	and is not visible in the signature."""
+	
+	def __init__(self, action):
+		self.action = action
+	
+	def execute(self, ctx):
+		self.action.execute(ctx)
+	
+	def display(self, out):
+		pass
+	
+	def clone(self):
+		return Hidden(self.action.clone())
+	
+	def signature(self):
+		return ""
+
+
+class Print(Action):
+	"""Action that prints a message."""
+	
+	def __init__(self, msg):
+		self.msg = msg
+	
+	def execute(self, ctx):
+		ctx.print_info(self.msg)
+
+	def clone(self):
+		return Print(self.msg)
+
+	def display(self, out):
+		out.write("\tprint(%s)\n" % self.msg)
+	
+	def signature(self):
+		return "print(%s)" % self.msg
