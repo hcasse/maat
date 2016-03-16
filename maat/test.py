@@ -208,4 +208,4 @@ def post_init():
 		maat.goal("test", TEST_CASES)
 
 
-maat.post_inits.append(post_init)
+maat.post_inits.append(maat.FunDelegate(post_init))
