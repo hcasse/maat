@@ -120,6 +120,9 @@ class Path:
 		"""Get file part of the path."""
 		return os.path.split(self.path)[1]
 
+	def make(self, pref = "", suff = ""):
+		return self.parent() / (pref + self.get_base().get_file() + suff)
+
 
 topdir = Path(os.getcwd())	# top directory
 
@@ -354,4 +357,4 @@ osenv = OSEnv()
 rootenv = MapEnv("builtin", topdir, osenv)	#, sys.modules["maat"].__dict__)
 confenv = ScriptEnv("config", topdir, rootenv, { })
 topenv = ScriptEnv("main", topdir, confenv, sys.modules['__main__'].__dict__)
-cenv = topenv		# current environment
+curenv = topenv		# current environment

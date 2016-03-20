@@ -372,14 +372,14 @@ def goal(goal, deps, actions = action.Action()):
 		raise env.ElfError("a goal already named '%s' already exist!" % goal)
 	else:
 		file.set_goal()
-		file.recipe = ActionRecipe(goal, deps, actions)
-		return
+		ActionRecipe(goal, deps, actions)
 
-def phony(name, deps):
+
+def phony(name, deps, *actions):
 	"""Build a phony rule, that is, a rule without action
 	grouping several other rules in its dependencies.
 	The result is the recipe itself."""
-	a = ActionRecipe(name, deps)
+	a = ActionRecipe(name, deps, *actions)
 	a.ress[0].set_phony()
 	return a
 	
@@ -391,4 +391,12 @@ def find_exact(name):
 	except KeyError, e:
 		return None
 
-	
+
+def ensure_dir(path):
+	"""Add a rule ensuring that the directory matching the path is created.
+	Rreturn the target of the rule."""
+	target = get_file(path)
+	if not target.recipe:
+		ActionRecipe([target], [], action.MakeDir(path))
+	return target
+

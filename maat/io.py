@@ -108,7 +108,7 @@ class Context:
 			sys.stdout.write("%s ... " % msg)
 			sys.stdout.flush()
 	
-	def print_action_success(self, msg):
+	def print_action_success(self, msg = ""):
 		"""End an action with success."""
 		if not self.quiet:
 			if msg:
@@ -116,7 +116,7 @@ class Context:
 			sys.stdout.write(GREEN + BOLD + "[0K]" + NORMAL)
 			sys.stdout.write("\n");
 
-	def print_action_failure(self, msg):
+	def print_action_failure(self, msg = ""):
 		"""End an action with failure."""
 		if not self.quiet:
 			if msg:

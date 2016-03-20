@@ -20,6 +20,7 @@ import maat as base
 import maat.recipe as recipe
 import maat.action as action
 import maat.std as std
+from maat import install
 
 # internals
 need_c = False
@@ -135,6 +136,7 @@ gen_command(".o", ".cxx", comp_cxx_to_o)
 gen_command(".o", ".cpp", comp_cxx_to_o)
 gen_command(".o", ".c++", comp_cxx_to_o)
 gen_command(".o", ".C",   comp_cxx_to_o)
+gen_command(".o", ".cc",   comp_cxx_to_o)
 
 
 # Library Delegate
@@ -215,7 +217,7 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 	
 
 def program(name, sources, LDFLAGS = None, CFLAGS = None, CXXFLAGS = None,
-LIBS = None, RPATH = None):
+LIBS = None, RPATH = None, to = None):
 	"""Called to build a C or C++ program."""
 	
 	# record prog file
@@ -242,11 +244,12 @@ LIBS = None, RPATH = None):
 	# record it
 	std.ALL.append(prog)
 	std.DISTCLEAN.append(prog)
+	install.program(prog, to)
 
 
 def lib(name, sources, CFLAGS = None, CXXFLAGS = None, PREFIX = LIB_PREFIX, 
 SUFFIX = LIB_SUFFIX, type = "static", DYN_PREFIX = DLIB_PREFIX, DYN_SUFFIX = DLIB_SUFFIX,
-LDFLAGS =  None, LIBS = None, RPATH = None):
+LDFLAGS =  None, LIBS = None, RPATH = None, to = None):
 	"""Called to build a static library."""
 	global need_lib
 	need_lib = True
@@ -268,6 +271,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)
 		config.register(CONFIG_AR)
+		install.lib(lib, to)
 
 	# build dynamic library
 	if type in ["dynamic", "both"]:
@@ -287,6 +291,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None):
 			config.register(CONFIG_CXX)
 		else:
 			config.register(CONFIG_CC)
+		install.dlib(lib, to)
 
 	# build main goal
 	lib = file(name)

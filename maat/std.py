@@ -38,13 +38,18 @@ import maat.config as config
 import maat.env as env
 import maat.recipe as recipe
 import os.path
+import shutil
 
 ALL = []
+"""List of targets to build."""
 CLEAN = [maat.maat_dir]
+"""List of files to clean to remove temporary files."""
 DISTCLEAN = ["config.py", "config.pyc"]
-INSTALL_PROGRAMS = []
-INSTALL_LIBS = []
-INSTALL_DATA = []
+"""List of files to clean to remove any generated file (including configuration)."""
+INSTALL = []
+"""List of installation actions."""
+
+env.rootenv.PREFIX = "/usr"
 
 def install_default_goals():
 	"""Install default goals."""
@@ -72,5 +77,11 @@ def install_default_goals():
 	if not recipe.file_db.has_key(path):
 		maat.goal("config", [], action.FunAction(config.make))
 		maat.file("config")["DESCRIPTION"] = "build configuration"
+
+	# install install
+	if not recipe.file_db.has_key(env.topenv.path / "install"):
+		maat.goal("install", INSTALL)
+		maat.file("install")["DESCRIPTION"] = "perform installation of the sofware"
+	
 
 maat.post_inits.append(maat.FunDelegate(install_default_goals))

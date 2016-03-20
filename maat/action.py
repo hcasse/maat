@@ -39,6 +39,8 @@ def make_line(args):
 
 def invoke(cmd, ctx):
 	"""Launch the given command in the current shell."""
+	if  cmd == "None":
+		cmd()
 
 	# print command
 	line = make_line(cmd)
@@ -78,14 +80,6 @@ class Action:
 		"""Display an action (one tab + one line)."""
 		pass
 	
-	def clone(self):
-		"""Clone the current action."""
-		return Action()
-
-	def set_recipe(self, recipe):
-		"""Set the recipe implemented by the current action."""
-		self.recipe = recipe
-
 	def signature(self):
 		"""compute the signature of the function as a string."""
 		return ""
@@ -374,5 +368,5 @@ class MakeDir(Action):
 	
 	def signature(self):
 		return "makedir(%s)" % self.path
-
+	
 	

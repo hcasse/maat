@@ -87,7 +87,7 @@ def pop_env():
 	"""Pop the top environment."""
 	set_env(envstack.pop())
 
-set_env(env.cenv)
+set_env(env.curenv)
 
 
 # parse arguments
