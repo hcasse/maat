@@ -20,20 +20,6 @@ import os
 import os.path
 import sys
 
-class ElfError(Exception):
-	"""Exception when a Make error happens."""
-	msg = None
-	
-	def __init__(self, msg):
-		self.msg = msg
-	
-	def __repr__(self):
-		return self.msg
-
-	def __str__(self):
-		return self.msg
-
-
 def to_string(v):
 	"""Convert a value to string."""
 	if v == None:

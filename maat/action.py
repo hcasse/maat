@@ -17,14 +17,15 @@
 """Represents the action that may be performed to build
 the recipes."""
 
+import common
 import env
-import os
 import lowlevel
+import os
 import re
 import select
 import shutil
-import sys
 import subprocess
+import sys
 
 def make_line(args):
 	line = ""
@@ -64,7 +65,7 @@ def invoke(cmd, ctx):
 	# wait end of called process
 	r = proc.wait()
 	if r <> 0:
-		raise env.ElfError("build failed")
+		common.error("build failed")
 
 
 class Action:
@@ -72,7 +73,7 @@ class Action:
 	recipe = None
 	
 	def execute(self, ctx):
-		"""Perform the action. If an action fails, raise env.ElfError exception.
+		"""Perform the action. If an action fails, raise env.MaatError exception.
 		It takes as parameter the IO context of execution."""
 		pass
 	
@@ -249,7 +250,7 @@ class Remove(Action):
 					os.remove(str(p))	
 			except OSError, e:
 				if not self.ignore_error:
-					raise env.ElfError(str(e))
+					common.error(str(e))
 
 	def display(self, out):
 		for p in self.paths:
@@ -278,7 +279,7 @@ class Move(Action):
 		try:
 			pass
 		except OSError, e:
-			raise env.ElfError(str(e))
+			common.error(str(e))
 		
 	def display(self, out):
 		for p in self.paths:
@@ -302,7 +303,7 @@ class Invoke(Action):
 		try:
 			invoke(self.cmd, ctx)
 		except OSError, e:
-			raise env.ElfError(str(e))
+			common.error(str(e))
 		
 	def display(self, out):
 		out.write("\t%s\n" % make_line(self.cmd))

@@ -17,6 +17,7 @@
 """Main module of Maat, a python-based build system."""
 import action
 import argparse
+import common
 import config
 import env
 import glob as pyglob
@@ -28,7 +29,6 @@ import os
 import re
 import recipe
 import services
-import shutil
 import sign
 import sys
 
@@ -140,7 +140,7 @@ def make_rec(f, ctx):
 	update = f.is_goal
 	if not f.actual().exists():
 		if not f.recipe:
-			raise env.ElfError("file '%s' does not exist and no recipe is able to build it" % f.path)
+			common.error("file '%s' does not exist and no recipe is able to build it" % f.path)
 		else:
 			update = True
 	else:
@@ -162,7 +162,7 @@ def make_rec(f, ctx):
 				try:
 					os.makedirs(str(ppath))
 				except error, e:
-					raise env.ElfError(str(e))
+					common.error(env.ElfError(str(e)))
 		
 		# perform the recipe action
 		push_env(f.recipe.env)
@@ -219,7 +219,7 @@ def make_work(ctx = io.Context()):
 					make_rec(f, ctx)
 				ctx.print_success("all is fine!");
 				sign.save(ctx)
-			except env.ElfError, e:
+			except common.MaatError, e:
 				ctx.print_error(e)
 			except KeyboardInterrupt, e:
 				sys.stderr.write("\n")
@@ -227,8 +227,9 @@ def make_work(ctx = io.Context()):
 
 
 def make_at_exit():
-	set_env(env.topenv)
-	make_work()
+	if not common.script_failed:
+		set_env(env.topenv)
+		make_work()
 	
 import atexit
 atexit.register(make_at_exit)
@@ -272,7 +273,7 @@ def subdir(dir):
 	dpath = (env.cenv.path / dir).norm()
 	path = dpath / "make.py"
 	if not path.can_read():
-		raise env.ElfError("no 'make.py' in %s" % path)
+		common.script_error("no 'make.py' in %s" % path)
 		
 	# push new environment
 	name = (curenv.name + "_" + str(dir)).replace(".", "_")

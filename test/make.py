@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import maat.c as c
 from maat import *
+from maat import install
 
 CFLAGS = "-g3"
 
@@ -12,3 +13,7 @@ subdir("ko")
 subdir("lib")
 
 print "my compiler is %s" % curenv.CC
+
+PROJECT = "test"
+install.data("README")
+install.data("doc")

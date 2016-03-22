@@ -17,10 +17,12 @@
 import os.path
 from maat import *
 import maat as base
-import maat.recipe as recipe
-import maat.action as action
-import maat.std as std
-from maat import install
+
+import common
+import action
+import install
+import recipe
+import std
 
 # internals
 need_c = False
@@ -217,7 +219,7 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 	
 
 def program(name, sources, LDFLAGS = None, CFLAGS = None, CXXFLAGS = None,
-LIBS = None, RPATH = None, to = None):
+LIBS = None, RPATH = None, INSTALL = ""):
 	"""Called to build a C or C++ program."""
 	
 	# record prog file
@@ -244,12 +246,13 @@ LIBS = None, RPATH = None, to = None):
 	# record it
 	std.ALL.append(prog)
 	std.DISTCLEAN.append(prog)
-	install.program(prog, to)
+	if INSTALL <> None:
+		install.program(prog, INSTALL)
 
 
 def lib(name, sources, CFLAGS = None, CXXFLAGS = None, PREFIX = LIB_PREFIX, 
 SUFFIX = LIB_SUFFIX, type = "static", DYN_PREFIX = DLIB_PREFIX, DYN_SUFFIX = DLIB_SUFFIX,
-LDFLAGS =  None, LIBS = None, RPATH = None, to = None):
+LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL = ""):
 	"""Called to build a static library."""
 	global need_lib
 	need_lib = True
@@ -257,7 +260,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None, to = None):
 
 	# check type
 	if type not in ["static", "dynamic", "both"]:
-		raise env.ElfError("library type must be one of static (default), dynamic or both.")
+		common.script_error("library type must be one of static (default), dynamic or both.")
 
 	# build objects
 	sources = [file(s) for s in sources]
@@ -271,7 +274,8 @@ LDFLAGS =  None, LIBS = None, RPATH = None, to = None):
 		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)
 		config.register(CONFIG_AR)
-		install.lib(lib, to)
+		if INSTALL <> None:
+			install.lib(lib, INSTALL)
 
 	# build dynamic library
 	if type in ["dynamic", "both"]:
@@ -291,7 +295,8 @@ LDFLAGS =  None, LIBS = None, RPATH = None, to = None):
 			config.register(CONFIG_CXX)
 		else:
 			config.register(CONFIG_CC)
-		install.dlib(lib, to)
+		if INSTALL <> None:
+			install.dlib(lib, INSTALL)
 
 	# build main goal
 	lib = file(name)

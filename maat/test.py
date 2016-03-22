@@ -16,10 +16,11 @@
 
 """Module providing test services."""
 import maat
-from maat import action
-from maat import env
-from maat import io
-from maat import recipe
+import action
+import env
+import io
+import recipe
+
 import difflib
 import os
 import os.path
@@ -58,7 +59,7 @@ class Case(recipe.Recipe):
 			ctx.out.write(io.BOLD + io.GREEN + "\tSUCCESS: all tests passed!\n" + io.NORMAL)
 		else:
 			ctx.out.write(io.BOLD + io.RED + "\tFAILURE: %d tests failed on %d\n" % (len(self.tests) - self.succeeded, len(self.tests)) + io.NORMAL)
-			raise env.ElfError("Test failed.")
+			common.error("Test failed.")
 
 
 class Test(recipe.Recipe):

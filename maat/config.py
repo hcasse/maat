@@ -15,6 +15,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Maat module providing configuration classes."""
+import common
 import env
 import imp
 import maat
@@ -48,7 +49,7 @@ class Config:
 		"""Called to record a failed configuration."""
 		self.result = False
 		if self.blocking:
-			raise env.ElfError("cannot configure %s: %s" % self.name, msg)
+			common.error("cannot configure %s: %s" % self.name, msg)
 		else:
 			self.ctx.print_action_failure(msg)
 

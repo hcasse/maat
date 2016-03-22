@@ -460,6 +460,50 @@ These goals are using the following variables:
   * ''INSTALL_DATA'' -- list of data files to install.
 
 
+
+====== Install Module ======
+
+Install module provides basic facilities for installation of the application
+on the system. Most constructors provided by other modules automatically
+contribute to the installation (e.g. C module for programs and libraries).
+For most of them, you can let the module do the default installation or
+you can control the installation directory using the ''INSTALL'' variable.
+''INSTALL'' can get a valid path where to install the built resource,
+an empty string for default installation path or None to prevent installation.
+
+The default installation path are derived from conventions of the actual
+system. On Unix, typically, the installation directories are:
+  * ''/usr'' as a base directory,
+  * ''/usr/bin'' for programs,
+  * ''/usr/lib/'' for libraries,
+  * ''/usr/share/PROJECT'' for data (where PROJECT is a variable provided
+by the user naming the project).
+
+The base installation directory may be customized by setting somewhere
+in the script (preferably ''config.py'') the variable ''PREFIX''.
+
+The installation is launched with by the call to ''make.py'':
+<code bash>
+> ./make.py install
+</code>
+
+If the automatic constructors are not enough, user has the ability to
+add installations by hand:
+
+<code python>
+from maat import install
+</code>
+
+  * ''install.program''(prog, to) -- install the given program in the //to//
+directory (optional).
+  * ''install.lib''(lib, to) -- install the given library in the //to//
+directory (optional).
+  * ''install.data''(data, to, discard) -- install the given data file
+or directory recursively in the //to// directory (optional). The //discard//
+must be a file filter and, if provided, remove the paths matching this filter
+from installation.
+
+
 ====== C Module ======
 
 The C module is dedicated to the compilation of C or C++ files. To use it:
@@ -489,7 +533,8 @@ The //OPTIONS// may be one or several of:
   * ''CXXFLAGS'' -- ''CXXFLAGS'' to apply to each C++ source,
   * ''LDFLAGS'' -- flags to apply at link time,
   * ''LIBS'' -- list of libraries to use,
-  * ''RPATH'' -- list of directories to retrieve libraries at link time
+  * ''RPATH'' -- list of directories to retrieve libraries at link time,
+  * ''INSTALL'' -- select directory for installation (None for no installation).
 (only on OS supporting this).
 
 
@@ -518,6 +563,7 @@ if not provided).
 if not provided),
   * ''DYN_SUFFIX'' -- suffix for producing dynamic library file (system default
 if not provided).
+  * ''INSTALL'' -- select directory for installation (None for no installation).
 
 The following //OPTIONS// applies only when a dynamic/shared is built:
   * ''LDFLAGS'' -- additional link flags,

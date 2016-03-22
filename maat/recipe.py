@@ -15,8 +15,9 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes used to represent recipes."""
-import env
 import action
+import common
+import env
 import io
 import os
 import os.path
@@ -369,7 +370,7 @@ def goal(goal, deps, actions = action.Action()):
 	path = env.Path(env.cenv.path) / goal
 	file = get_file(str(path))
 	if file.recipe:
-		raise env.ElfError("a goal already named '%s' already exist!" % goal)
+		common.script_error("a goal already named '%s' already exist!" % goal)
 	else:
 		file.set_goal()
 		ActionRecipe(goal, deps, actions)
