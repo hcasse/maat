@@ -27,15 +27,18 @@ import shutil
 import subprocess
 import sys
 
+
 def make_line(args):
 	line = ""
 	if isinstance(args, str):
 		return args
 	for a in args:
-		if isinstance(a, list):
+		if a == None:
+			continue
+		elif isinstance(a, list):
 			line = line + make_line(a)
 		else:
-			line = line + " " + env.to_string(a)
+			line = line + " " + str(a)
 	return line
 
 def invoke(cmd, ctx):
@@ -237,7 +240,7 @@ class Remove(Action):
 	ignore_error = None
 	
 	def __init__(self, args, ignore_error = False):
-		self.paths = [env.Path(arg) for arg in args]
+		self.paths = [common.Path(arg) for arg in args]
 		self.ignore_error = ignore_error
 	
 	def execute(self, ctx):	
@@ -271,8 +274,8 @@ class Move(Action):
 	target = None
 	
 	def __init__(self, paths, target):
-		self.paths = [env.Path(arg) for arg in args]
-		self.target = env.Path(target)
+		self.paths = [common.Path(arg) for arg in args]
+		self.target = common.Path(target)
 	
 	def execute(self, ctx):	
 		# TODO

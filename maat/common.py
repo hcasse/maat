@@ -17,9 +17,12 @@
 """This module provides several facilities useful for other modules."""
 
 import fnmatch
-from maat import io
+import os
+
+import io
 
 script_failed = False
+topenv = None
 
 # Error Management
 
@@ -48,6 +51,86 @@ def script_error(msg):
 	io.DEF.print_error(msg)
 	script_failed = True
 	exit(1)
+
+
+# path mangement
+class Path:
+	"""Base class of objects representing files.
+	Mainly defined by its path. Provide several facilities like "/"
+	overload."""
+	path = None
+	
+	def __init__(self, path):
+		if isinstance(path, Path):
+			self.path = path.path
+		else:
+			self.path = str(path)
+	
+	def __div__(self, arg):
+		return Path(os.path.join(self.path, str(arg)))
+	
+	def __add__(self, ext):
+		return Path(self.path + ext)
+
+	def __str__(self):
+		return self.path
+	
+	def exists(self):
+		"""Test if the file matching the path exists."""
+		return os.path.exists(self.path)
+
+	def get_mod_time(self):
+		return os.path.getmtime(self.path)
+		
+	def prefixed_by(self, path):
+		return self.path.startswith(str(path))
+
+	def relative_to_cur(self):
+		return Path(os.path.relpath(self.path))
+
+	def relative_to_top(self):
+		return Path(os.path.relpath(str(self.path), str(topenv.path)))
+
+	def relative_to(self, path):
+		return Path(os.path.relpath(self.path, path.path))
+
+	def norm(self):
+		"""Build a normalized of version of current path."""
+		return Path(os.path.normpath(self.path))
+
+	def set_cur(self):
+		"""Set this directory as the current directory."""
+		os.chdir(self.path)
+	
+	def is_dir(self):
+		"""Test if the path is a directory."""
+		return os.path.isdir(self.path)
+	
+	def can_read(self):
+		"""Test if the path design a file/directory that can be read."""
+		return os.access(self.path, os.R_OK)
+
+	def parent(self):
+		"""Get the parent directory of the current directory."""
+		return Path(os.path.dirname(self.path))
+	
+	def glob(self, re = "*"):
+		return glob.glob(os.path.join(self.path, re))
+
+	def get_ext(self):
+		"""Get extension of a path."""
+		return os.path.splitext(self.path)[1]
+	
+	def get_base(self):
+		"""Get the base of path, i.e., the path without extension."""
+		return Path(os.path.splitext(self.path)[0])
+	
+	def get_file(self):
+		"""Get file part of the path."""
+		return os.path.split(self.path)[1]
+
+	def make(self, pref = "", suff = ""):
+		return self.parent() / (pref + self.get_base().get_file() + suff)
 
 
 # Filters
@@ -188,3 +271,6 @@ class OrFilter(Filter):
 
 	def __str__(self):
 		return "(" + " or ".join([str(f) for f in self.filters]) + ")"
+
+
+

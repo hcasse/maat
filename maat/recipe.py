@@ -71,7 +71,7 @@ class File(env.MapEnv):
 					self.actual_path = self.path
 				else:
 					bpath = env.topenv.path / bpath
-					bpath = env.Path(bpath)
+					bpath = common.Path(bpath)
 					if self.path.prefixed_by(env.topenv.path):
 						self.actual_path = bpath / self.path.relative_to(env.topenv.path)
 					else:
@@ -120,7 +120,7 @@ def get_file(path):
 	if not os.path.isabs(str(path)):
 		path = env.cenv.path / path
 	else:
-		path = env.Path(path)
+		path = common.Path(path)
 	path = path.norm()
 	
 	# find the file
@@ -322,8 +322,8 @@ def gen(dir, rext, dep):
 	"""Generate recipes to build res. A generation string is found between
 	file src and res. Each intermediate file has for name the kernel of res
 	(generated files will be put in the res directory). """
-	dir = env.Path(dir)
-	dep = env.Path(dep)
+	dir = common.Path(dir)
+	dep = common.Path(dep)
 	
 	# prepare the kernel
 	b = dep.get_base()
@@ -367,7 +367,7 @@ def rule(ress, deps, *actions):
 
 def goal(goal, deps, actions = action.Action()):
 	"""Build a goal with the following dependencies."""
-	path = env.Path(env.cenv.path) / goal
+	path = common.Path(env.cenv.path) / goal
 	file = get_file(str(path))
 	if file.recipe:
 		common.script_error("a goal already named '%s' already exist!" % goal)

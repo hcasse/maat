@@ -75,7 +75,7 @@ def set_env(e):
 	global curdir
 	env.cenv = e
 	curenv = e
-	curdir = env.Path(e.path)
+	curdir = common.Path(e.path)
 	e.path.set_cur()
 	
 def push_env(env):
@@ -166,7 +166,7 @@ def make_rec(f, ctx):
 		
 		# perform the recipe action
 		push_env(f.recipe.env)
-		env.Path(f.recipe.cwd).set_cur()
+		common.Path(f.recipe.cwd).set_cur()
 		if f.is_goal or not f.is_phony:
 			ctx.print_info("Making %s" % f.path.relative_to(env.topenv.path))
 		f.recipe.action(ctx)
@@ -361,11 +361,11 @@ def gen_command(res, dep, fun):
 
 def join(a1, a2):
 	"""Join two parts of a file path."""
-	return env.Path(a1) / a2
+	return common.Path(a1) / a2
 
 def isdir(path):
 	"""Test if the given path is a directory."""
-	return env.Path(path).is_dir()
+	return common.Path(path).is_dir()
 
 def listdir(path = None):
 	"""List the content of a directory. If no argument is passed,
@@ -386,16 +386,16 @@ def ext_of(p):
 def suffix(p):
 	"""Get extension of a path or a list of paths."""
 	if isinstance(p, list):
-		return [env.Path(x).get_ext() for x in p]
+		return [common.Path(x).get_ext() for x in p]
 	else:
-		return env.Path(p).get_ext()
+		return common.Path(p).get_ext()
 
 def path(p):
 	"""Convert simple string to Maat path."""
-	if p == None or p is env.Path:
+	if p == None or p is common.Path:
 		return p
 	else:
-		return env.Path(str(p))
+		return common.Path(str(p))
 
 def glob(re):
 	"""Select content of a directory from a filesystem regular expression."""
