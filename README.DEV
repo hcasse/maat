@@ -13,11 +13,13 @@
 
 ===== Engine =====
 
-[ ] add automatic download of dependencies
-[ ] add file update resolution based on file content
+[ ] support invocation from non-top make.py
 [ ] add command to support file generation from variable content
 [ ] add goal to build a distribution (source, binary, etc)
 [ ] add parallel run
+[ ] add file update resolution based on file content
+[ ] add automatic download of dependencies (from OS or from network)
+[X] Path are now iterable if they are directories and return their content. 
 [X] add goal to perform installation
 [X] add file update resolution based on command matching
 [X] add overload for "." to environment

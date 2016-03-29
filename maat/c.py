@@ -219,7 +219,7 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 	
 
 def program(name, sources, LDFLAGS = None, CFLAGS = None, CXXFLAGS = None,
-LIBS = None, RPATH = None, INSTALL = ""):
+LIBS = None, RPATH = None, INSTALL_TO = ""):
 	"""Called to build a C or C++ program."""
 	
 	# record prog file
@@ -246,13 +246,14 @@ LIBS = None, RPATH = None, INSTALL = ""):
 	# record it
 	std.ALL.append(prog)
 	std.DISTCLEAN.append(prog)
-	if INSTALL <> None:
-		install.program(prog, INSTALL)
+	if INSTALL_TO <> None:
+		prog.INSTALL_TO = INSTALL_TO
+		install.program(prog)
 
 
 def lib(name, sources, CFLAGS = None, CXXFLAGS = None, PREFIX = LIB_PREFIX, 
 SUFFIX = LIB_SUFFIX, type = "static", DYN_PREFIX = DLIB_PREFIX, DYN_SUFFIX = DLIB_SUFFIX,
-LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL = ""):
+LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL_TO = "", DYN_INSTALL_TO = ""):
 	"""Called to build a static library."""
 	global need_lib
 	need_lib = True
@@ -274,8 +275,9 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL = ""):
 		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)
 		config.register(CONFIG_AR)
-		if INSTALL <> None:
-			install.lib(lib, INSTALL)
+		if INSTALL_TO <> None:
+			lib.INSTALL_TO = INSTALL_TO
+			install.lib(lib)
 
 	# build dynamic library
 	if type in ["dynamic", "both"]:
@@ -295,8 +297,9 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL = ""):
 			config.register(CONFIG_CXX)
 		else:
 			config.register(CONFIG_CC)
-		if INSTALL <> None:
-			install.dlib(lib, INSTALL)
+		if DYN_INSTALL_TO <> None:
+			lib.DYN_INSTALL_TO = DYN_INSTALL_TO
+			install.dlib(lib)
 
 	# build main goal
 	lib = file(name)

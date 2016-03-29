@@ -33,10 +33,11 @@ In addition, it is using the following variables from the current environment:
 """
 
 import maat
-import maat.action as action
-import maat.config as config
-import maat.env as env
-import maat.recipe as recipe
+import action
+import config
+import env
+import install
+import recipe
 import os.path
 import shutil
 
@@ -83,5 +84,10 @@ def install_default_goals():
 		maat.goal("install", INSTALL)
 		maat.file("install")["DESCRIPTION"] = "perform installation of the sofware"
 	
+	# dist install
+	if not recipe.file_db.has_key(env.topenv.path / "dist"):
+		recipe.phony("setup-dist", [], install.SetupDist())
+		maat.goal("dist", ["setup-dist", "install"])
+		maat.file("dist")["DESCRIPTION"] = "build a binary distribution"
 
 maat.post_inits.append(maat.FunDelegate(install_default_goals))

@@ -42,7 +42,7 @@ class MaatError(Exception):
 
 def error(msg):
 	"""Raise a Maat exception with the given error message."""
-	raise ElfError(msg)
+	raise MaatError(msg)
 
 
 def script_error(msg):
@@ -131,6 +131,12 @@ class Path:
 
 	def make(self, pref = "", suff = ""):
 		return self.parent() / (pref + self.get_base().get_file() + suff)
+
+	def __iter__(self):
+		if not self.is_dir():
+			script_error("%s is not a directory" % self.path)
+		else:
+			return iter([Path(p) for p in os.listdir(self.path)])
 
 
 # Filters

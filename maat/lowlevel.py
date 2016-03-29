@@ -1,4 +1,4 @@
-#	MAAT top-level script
+#	MAAT low-level module
 #	Copyright (C) 2016 H. Casse <hugues.casse@laposte.net>
 #
 #	This program is free software: you can redistribute it and/or modify
@@ -13,33 +13,20 @@
 #
 #	You should have received a copy of the GNU General Public License
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""These modules implements low-level and compatible operations performed
+by the Maat build system."""
 
-"""Implements command line services of ElfMake."""
-
+import common
+import env
 import io
-import recipe
-import sys
+import os
 
-def list_goals(ctx = io.Context()):
-	"""List goals."""
-
-	l = [f for f in recipe.file_db.values() if f.is_goal and not f.is_phony]
-	l.sort()
-	ll = max([len(str(f)) for f in l])
-	for f in l:
-		desc = f.get_here("DESCRIPTION")
-		if desc:
-			ctx.print_info("%s %s" % (str(f) + " " * (ll - len(f.name)), desc))
-		else:
-			ctx.print_info(str(f))
-
-
-def print_db():
-	"""Print the DB."""
-	
-	done = { }
-	for f in recipe.file_db:
-		r = recipe.file_db[f].recipe
-		if r and r not in done:
-			done[r] = True
-			r.display(sys.stdout)
+def makedir(path):
+	"""Build a directory if not existing, building possibly intermediate
+	directories."""
+	path = str(path)
+	if not os.path.isdir(path):
+		try:
+			os.makedirs(path)
+		except os.error, e:
+			common.error("cannot create '%s': %s" % (path, e))

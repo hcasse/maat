@@ -19,6 +19,7 @@ import action
 import argparse
 import common
 import config
+import datetime
 import env
 import glob as pyglob
 import imp
@@ -26,6 +27,7 @@ import inspect
 import io
 import lowlevel
 import os
+import platform
 import re
 import recipe
 import services
@@ -126,6 +128,13 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 
 	# load configuration
 	config.load(do_config)
+	
+	# predefined variables
+	d = datetime.date.today()
+	env.topenv.TODAY = datetime.date.today().isoformat()
+	env.topenv.SYSTEM = platform.system()
+	env.topenv.MACHINE = platform.machine()
+	env.topenv.PLATFORM = "%s-%s" % (env.topenv.PLATFORM, env.topenv.MACHINE)
 
 
 # make process

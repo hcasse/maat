@@ -17,6 +17,7 @@
 """Module providing test services."""
 import maat
 import action
+import common
 import env
 import io
 import recipe
@@ -39,7 +40,7 @@ class Case(recipe.Recipe):
 	longer = None
 	
 	def __init__(self, name, deps):
-		recipe.Recipe.__init__(self, [name], deps)
+		recipe.Recipe.__init__(self, [maat.path(name)], deps)
 		self.tests = []
 		self.name = name
 		recipe.get_file(name).is_goal = True
@@ -76,6 +77,7 @@ class Test(recipe.Recipe):
 		recipe.get_file(name).is_goal = True
 		self.case = case
 		case.add(self)
+		self.ress[0].set_phony()
 
 	def success(self, ctx):
 		"""Record the current test as a success and display
