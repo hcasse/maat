@@ -157,6 +157,9 @@ class DenyFilter(Filter):
 	def accept(self, path):
 		return False
 
+	def __str__(self):
+		return "false"
+
 class ListFilter(Filter):
 	"""Only accept paths in the given list."""
 	
@@ -206,20 +209,22 @@ class FunFilter(Filter):
 	def __str__(self):
 		return "fun"
 
-def filter(arg, neg = False):
+def filter(arg):
 	"""Build a filter according to the type of the argument:
 	* string to FNFilter,
 	* list to ListFilter,
 	* function to FunFilter
 	* regular expression to REFilter,
-	* None to Yes filter.
+	* None, True to Yes filter,
+	* False to DenyFilter.
 	"""
 	
 	if arg == None:
-		if not neg:
-			return Filter()
-		else:
-			return DenyFilter()
+		return Filter()
+	elif arg == True:
+		return Filter()
+	elif arg == False:
+		return DenyFilter()
 	elif isinstance(arg, Filter):
 		return arg
 	elif isinstance(arg, string):

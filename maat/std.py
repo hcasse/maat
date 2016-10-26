@@ -50,7 +50,7 @@ DISTCLEAN = ["config.py", "config.pyc"]
 INSTALL = []
 """List of installation actions."""
 
-env.rootenv.PREFIX = "/usr"
+env.root.PREFIX = "/usr"
 
 def install_default_goals():
 	"""Install default goals."""
@@ -80,12 +80,12 @@ def install_default_goals():
 		maat.file("config")["DESCRIPTION"] = "build configuration"
 
 	# install install
-	if not recipe.file_db.has_key(env.topenv.path / "install"):
+	if not recipe.file_db.has_key(env.top.path / "install"):
 		maat.goal("install", INSTALL)
 		maat.file("install")["DESCRIPTION"] = "perform installation of the sofware"
 	
 	# dist install
-	if not recipe.file_db.has_key(env.topenv.path / "dist"):
+	if not recipe.file_db.has_key(env.top.path / "dist"):
 		recipe.phony("setup-dist", [], install.SetupDist())
 		maat.goal("dist", ["setup-dist", "install"])
 		maat.file("dist")["DESCRIPTION"] = "build a binary distribution"

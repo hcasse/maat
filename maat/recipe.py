@@ -70,10 +70,10 @@ class File(env.MapEnv):
 				if not bpath:
 					self.actual_path = self.path
 				else:
-					bpath = env.topenv.path / bpath
+					bpath = env.top.path / bpath
 					bpath = common.Path(bpath)
-					if self.path.prefixed_by(env.topenv.path):
-						self.actual_path = bpath / self.path.relative_to(env.topenv.path)
+					if self.path.prefixed_by(env.top.path):
+						self.actual_path = bpath / self.path.relative_to(env.top.path)
 					else:
 						self.actual_path =  bpath / self.path
 		return self.actual_path

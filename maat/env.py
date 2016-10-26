@@ -254,9 +254,9 @@ class ScriptEnv(ParentEnv):
 
 # environment definitons
 osenv = OSEnv()
-rootenv = MapEnv("builtin", topdir, osenv)	#, sys.modules["maat"].__dict__)
-confenv = ScriptEnv("config", topdir, rootenv, { })
-topenv = ScriptEnv("main", topdir, confenv, sys.modules['__main__'].__dict__)
-curenv = topenv			# current environment
-common.topenv = topenv	# to break depedency circularity
+root = MapEnv("builtin", topdir, osenv)
+conf = ScriptEnv("config", topdir, root, { })
+top = ScriptEnv("main", topdir, conf, sys.modules['__main__'].__dict__)
+curenv = top			# current environment
+common.topenv = top		# to break depedency circularity
 

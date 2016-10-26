@@ -62,7 +62,7 @@ do_config = False	# configuration need to be done
 do_list = False		# list the goals
 do_print_db = False	# print the data base
 post_inits = []		# Processing to call just before building
-maat_dir = env.topenv.path / ".maat"
+maat_dir = env.top.path / ".maat"
 """Temporary path for Maat files"""
 
 # environment management
@@ -124,17 +124,17 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 			if a == "config":
 				do_config = True
 		else:
-			env.rootenv.set(p[0], p[1])
+			env.root.set(p[0], p[1])
 
 	# load configuration
 	config.load(do_config)
 	
 	# predefined variables
 	d = datetime.date.today()
-	env.topenv.TODAY = datetime.date.today().isoformat()
-	env.topenv.SYSTEM = platform.system()
-	env.topenv.MACHINE = platform.machine()
-	env.topenv.PLATFORM = "%s-%s" % (env.topenv.PLATFORM, env.topenv.MACHINE)
+	env.root.TODAY = datetime.date.today().isoformat()
+	env.root.SYSTEM = platform.system()
+	env.root.MACHINE = platform.machine()
+	env.root.PLATFORM = "%s-%s" % (env.root.PLATFORM, env.root.MACHINE)
 
 
 # make process
@@ -177,7 +177,7 @@ def make_rec(f, ctx):
 		push_env(f.recipe.env)
 		common.Path(f.recipe.cwd).set_cur()
 		if f.is_goal or not f.is_phony:
-			ctx.print_info("Making %s" % f.path.relative_to(env.topenv.path))
+			ctx.print_info("Making %s" % f.path.relative_to(env.top.path))
 		f.recipe.action(ctx)
 		pop_env()
 
@@ -191,7 +191,7 @@ def make_work(ctx = io.Context()):
 	"""Perform the real build."""
 	
 	# are we at the top make.py?
-	if env.cenv <> env.topenv:
+	if env.cenv <> env.top:
 		return
 
 	# prepare context
@@ -237,7 +237,7 @@ def make_work(ctx = io.Context()):
 
 def make_at_exit():
 	if not common.script_failed:
-		set_env(env.topenv)
+		set_env(env.top)
 		make_work()
 	
 import atexit
@@ -441,3 +441,22 @@ def shell(cmd):
 	except subprocess.CalledProcessError, e:
 		io.DEF.print_error("error with call to '%s': %s" % (cmd, e))
 		exit(1)
+
+def move(files, target):
+	"""Create an action moving files to the given target."""
+	return action.Move(files, target)
+
+def hidden(actions):
+	"""Create an action that perform the parameter action without
+	displaying the command."""
+	return action.Hidden(actions)
+
+def show(msg):
+	"""Print to the screen the given message."""
+	return action.Print(msg)
+
+def makedir(path):
+	"""Build a directory."""
+	return action.Makedir(path)
+
+	

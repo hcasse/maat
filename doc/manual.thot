@@ -254,7 +254,7 @@ The following environment are available:
   * ''env.cenv'' -- current environment.
 
 
-====== Configuration ======
+====== Configuration Module ======
 
 ===== Description =====
 
@@ -271,7 +271,7 @@ will be added. Yet, the use of configuration is not mandatory for most module:
 if the configuration is not provided, the module will fall back to default
 usual values.
 
-In the opposite, if you want to use configuration, you have just ask for
+In the opposite, if you want to use a configuration, you have just ask for
 building the ''config.py'' file:
 <code bash>
 > ./make.py config
@@ -404,10 +404,6 @@ Resources to examine files includes:
   * ''path''(//path//) -- convert string to path.
   * ''suffix''(//path//) -- get extension of the file designed by the path.
 
-Actions to work on files includes:
-  * ''grep''(//RE//, //command//) -- execute given command and perform regular recognition on given output.
-  * ''mkdir''(//path//) -- create the directory of the path.
-  * ''remove''(//list//) -- remove directories and files of the list.
 
 ===== Goals and Rules =====
 
@@ -418,13 +414,33 @@ The following commands may be used to manage goals and rules:
 The following variables are used:
   * ''DESCRIPTION'' put on a goal file, provide description for the goal for option "-l".
 
+Basically, writing a rule is as simple as writing:
+<code>
+rule(target_file, source_files, actions)
+</code>
+With:
+  * //target_file// -- path of the file to build,
+  * // source_files// -- either a source file path, or a list of source file paths,
+  * //actions// -- either a single action, or a list of actions.
+Actions may be commands as shown presented in the next section
+or simple strings that will interpreted as shell commands.
+
+
 ===== Actions =====
 
 In the previous goals and rules, actions may be object of type Action but also strings
 that are automatically promoted as ''shell'' actions. Yet, other actions exists:
 
   * ''fun''(//function//) -- build an action like a call to the given function.
+  * ''hidden''(//actions//) -- perform the parameter actions without
+displaying the commands.
+  * ''makedir''(//path//= -- build the directory matching the given path,
+if it doesn't exist, and intermediate directories.
+  * ''move''(//files//, //target//) -- move //files// to the //target// directory.
+  * ''remove''(//files//, //ignore_error// = false) -- remove the listed
+files; if ignore_error is true, any error during the removal will be ignored.
   * ''shell''(//commands//) -- build a a shell action.
+  * ''show''(//message//) -- display the given message.
 
 
 ====== Special Variables ======
@@ -435,7 +451,7 @@ that are automatically promoted as ''shell'' actions. Yet, other actions exists:
 
 ====== Standard Environment ======
 
-The standard provides a consistant environment to let other modules
+The standard environment provides a consistant environment to let other modules
 interact in a convenient. It is not mandatory (you can provide your own
 standard module if needed) but this may make interaction with other modules
 more difficult.

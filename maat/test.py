@@ -157,7 +157,7 @@ class OutputTest(Test):
 			in_stream = NULL
 		cmd = action.make_line(self.cmd)
 		if maat.verbose:
-			ctx.print_info("running %s" % cmd) 
+			ctx.print_info("running %s" % cmd)
 		rc = subprocess.call(cmd, stdin = in_stream, stdout = out_stream, stderr = err_stream, shell = True)
 		if rc <> 0:
 			self.failure(ctx, "return code = %d, command = %s" % (rc, cmd))

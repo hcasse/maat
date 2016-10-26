@@ -40,7 +40,7 @@ class Install(action.Action):
 		to = self.file.INSTALL_TO
 		if not to:
 			to = self.dir
-		return (env.topenv.path / self.file.PREFIX / to)
+		return (env.top.path / self.file.PREFIX / to)
 	
 	def execute(self, ctx):
 		try:
@@ -64,7 +64,7 @@ class Install(action.Action):
 class InstallData(action.Action):
 	"""Install data files."""
 	
-	def __init__(self, data, discard = None):
+	def __init__(self, data, discard = False):
 		self.data = data
 		self.discard = discard
 	
@@ -85,36 +85,12 @@ class InstallData(action.Action):
 		return "install data %s to %s discarding %s" % (self.data, self.install_path(), self.discard)
 
 	def execute(self, ctx):
-		to = self.install_path()
-		lowlevel.makedir(to)
 		try:
 			ctx.print_action(self.signature())
-			if not self.data.path.is_dir():
-				shutil.copyfile(str(self.data), str(to / self.data.path.get_file()))
-			else:
-				for dir, dirs, files in os.walk(str(self.data)):
-					
-					# create directory
-					org_dpath = path(dir)
-					tgt_dpath = to / dir
-					if not tgt_dpath.exists():
-						os.mkdir(str(tgt_dpath))
-					
-					# copy files
-					for file in files:
-						org_fpath = org_dpath / file
-						tgt_fpath = to / dir / file
-						if not self.discard.accept(org_fpath):
-							shutil.copyfile(str(org_fpath), str(tgt_fpath))
-					
-					# copy directories
-					for d in dirs:
-						org_path = org_dpath / d
-						if self.discard.accept(org_path):
-							dirs.remove(d)
-					
+			to = self.install_path()
+			lowlevel.copy(self.data.path, to, common.NotFilter(self.discard))
 			ctx.print_action_success()
-		except (IOError, OSError) as e:
+		except common.MaatError as e:
 			msg = str(e)
 			ctx.print_action_failure(msg)
 			env.error("installation failed")
@@ -122,18 +98,18 @@ class InstallData(action.Action):
 
 def dist_name():
 	"""Build the name of the directory to build a distribution."""
-	DIST = env.topenv.DIST
+	DIST = env.top.DIST
 	if not DIST:
-		PROJECT = env.topenv.PROJECT
+		PROJECT = env.top.PROJECT
 		if not PROJECT:
 			common.script_error("no project name defined!")
 		DIST = PROJECT
-		VERSION = env.topenv.VERSION
+		VERSION = env.top.VERSION
 		if VERSION:
 			DIST = DIST + "-" + VERSION
 		else:
-			DIST = DIST + "-" + env.topenv.TODAY
-		DIST = DIST + "-" + env.topenv.PLATFORM
+			DIST = DIST + "-" + env.top.TODAY
+		DIST = DIST + "-" + env.top.PLATFORM
 	return DIST
 	
 
@@ -145,7 +121,7 @@ class SetupDist(action.Action):
 
 	def execute(self, ctx):
 		p = temp(dist_name())
-		env.topenv.PREFIX = p
+		env.top.PREFIX = p
 		lowlevel.makedir(p)
 	
 	def display(self, out):
@@ -176,7 +152,7 @@ def dlib(lib):
 	std.INSTALL.append(target)
 
 
-def data(data, to = "", discard = None):
+def data(data, discard = False):
 	"""Install data: performs just a copy for a plain file, performs
 	a recursive copy for a directory. If discard is given, it contains
 	files to discard from the installation.
@@ -193,7 +169,7 @@ def data(data, to = "", discard = None):
 	# build the rule
 	data = recipe.get_file(data)
 	target = file(data.path.make("install-data-"))
-	action = InstallData(data, common.filter(discard, True))
+	action = InstallData(data, common.filter(discard))
 	recipe.phony([target], [data], action)
 	std.INSTALL.append(target)
 

@@ -1,4 +1,4 @@
-#	MAAT top-level script
+#	Service module
 #	Copyright (C) 2016 H. Casse <hugues.casse@laposte.net>
 #
 #	This program is free software: you can redistribute it and/or modify
@@ -43,3 +43,5 @@ def print_db():
 		if r and r not in done:
 			done[r] = True
 			r.display(sys.stdout)
+
+	

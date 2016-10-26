@@ -54,9 +54,9 @@ else:
 
 
 # default configuration
-env.rootenv.CC = "cc"
-env.rootenv.CXX = "c++"
-env.rootenv.AR = "ar"
+env.root.CC = "cc"
+env.root.CXX = "c++"
+env.root.AR = "ar"
 
 # convenient
 def contains_cxx(files):
@@ -214,7 +214,7 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 		if added:
 			o.ADDED_FLAGS = added
 		parse_dep(df)	
-	std.CLEAN = std.CLEAN + [obj.path.relative_to(env.topenv.path) for obj in objs]
+	std.CLEAN = std.CLEAN + [obj.path.relative_to(env.top.path) for obj in objs]
 	return objs
 	
 

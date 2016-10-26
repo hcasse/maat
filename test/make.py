@@ -17,3 +17,5 @@ print "my compiler is %s" % curenv.CC
 PROJECT = "test"
 install.data("README")
 install.data("doc")
+
+goal("show", [], show("Hello, World!"))

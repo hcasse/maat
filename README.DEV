@@ -13,6 +13,9 @@
 
 ===== Engine =====
 
+[ ] provide commands for rule as writing shell commands
+[ ] display percentage of build for each action
+[ ] add a quiet mode just displaying percentage with a bar
 [ ] support invocation from non-top make.py
 [ ] add command to support file generation from variable content
 [ ] add goal to build a distribution (source, binary, etc)
@@ -72,3 +75,9 @@
 
 [X] Add dependency system between configurations.
  
+
+
+===== Actions =====
+
+[ ] add mode (error, warning, fatal, ...) to show command.
+[ ] add makefile() command to create a file containing the given content.
