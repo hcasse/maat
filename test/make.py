@@ -18,4 +18,4 @@ PROJECT = "test"
 install.data("README")
 install.data("doc")
 
-goal("show", [], show("Hello, World!"))
+phony("show", [], show("Hello, World!"))

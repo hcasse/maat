@@ -58,36 +58,36 @@ def install_default_goals():
 	# install all
 	path = env.cenv.path / "all"
 	if not recipe.file_db.has_key(path):
-		maat.goal("all", ALL)
+		maat.phony("all", ALL)
 		maat.file("all")["DESCRIPTION"] = "build all"
 
 	# install clean
 	path = env.cenv.path / "clean"
 	if not recipe.file_db.has_key(path):
-		maat.goal("clean", [], maat.remove(CLEAN, ignore_error = True))
+		maat.phony("clean", [], maat.remove(CLEAN, ignore_error = True))
 		maat.file("clean")["DESCRIPTION"] = "remove produced files"
 
 	# install distclean
 	path = env.cenv.path / "distclean"
 	if not recipe.file_db.has_key(path):
-		maat.goal("distclean", ["clean"], maat.remove(DISTCLEAN, ignore_error = True))
+		maat.phony("distclean", ["clean"], maat.remove(DISTCLEAN, ignore_error = True))
 		maat.file("distclean")["DESCRIPTION"] = "remove produced files and configuration files"
 
 	# install config
 	path = env.cenv.path / "config"
 	if not recipe.file_db.has_key(path):
-		maat.goal("config", [], action.FunAction(config.make))
+		maat.phony("config", [], action.FunAction(config.make))
 		maat.file("config")["DESCRIPTION"] = "build configuration"
 
 	# install install
 	if not recipe.file_db.has_key(env.top.path / "install"):
-		maat.goal("install", INSTALL)
+		maat.phony("install", INSTALL)
 		maat.file("install")["DESCRIPTION"] = "perform installation of the sofware"
 	
 	# dist install
 	if not recipe.file_db.has_key(env.top.path / "dist"):
-		recipe.phony("setup-dist", [], install.SetupDist())
-		maat.goal("dist", ["setup-dist", "install"])
+		recipe.hidden("setup-dist", [], install.SetupDist())
+		maat.phony("dist", ["setup-dist", "install"])
 		maat.file("dist")["DESCRIPTION"] = "build a binary distribution"
 
 maat.post_inits.append(maat.FunDelegate(install_default_goals))

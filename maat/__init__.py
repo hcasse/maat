@@ -137,35 +137,6 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 	env.root.PLATFORM = "%s-%s" % (env.root.PLATFORM, env.root.MACHINE)
 
 
-# make process
-def collect_todo(f, todo):
-	"""Compute the list of goals to build."""
-	cnt = 0
-	if f.recipe:
-		for d in f.recipe.deps:
-			collect_todo(d, todo)
-	update = f.is_goal
-	if not update:
-		if not f.actual().exists():
-			if not f.recipe:
-				common.error("file '%s' does not exist and no recipe is able to build it" % f.path)
-			else:
-				print "DEBUG: %s does not exist!" % f
-				update = True
-		else:
-			if f.recipe:
-				for d in f.recipe.deps:
-					if not d.actual().exists() or f.younger_than(d):
-						print "DEBUG: %s to do because of %s" % (f, d)
-						update = True
-						break
-			if not update and not sign.test(f):
-				update = True
-				print "DEBUG: %s to do because of signature change!" % f
-	if update and not f in todo:
-		todo.append(f)
-
-
 def make_todo(todo, ctx):
 	cstat = 0
 	tstat = len(todo)	
@@ -183,7 +154,7 @@ def make_todo(todo, ctx):
 		# perform the recipe action
 		push_env(f.recipe.env)
 		common.Path(f.recipe.cwd).set_cur()
-		if f.is_goal or not f.is_phony:
+		if not f.is_hidden:
 			ctx.print_info("[%3d%%] Making %s" % (cstat * 100 / tstat, f.path.relative_to(env.top.path)))
 		f.recipe.action(ctx)
 		pop_env()
@@ -234,8 +205,8 @@ def make_work(ctx = io.Context()):
 					todo = ["all"]
 				targets = []
 				for a in todo:
-					collect_todo(recipe.get_file(a), targets)
-					make_todo(targets, ctx)
+					recipe.get_file(a).collect_updates(targets)
+				make_todo(targets, ctx)
 				ctx.print_success("all is fine!");
 				sign.save(ctx)
 			except common.MaatError, e:
@@ -346,10 +317,10 @@ def escape(str):
 
 ########## shortcut to recipe ###########
 
-def goal(goal, deps, actions = action.NULL):
+def phony(goal, deps, actions = action.NULL):
 	"""Define a goal that does not match an actual file.
 	Making the goal executes always its action."""
-	return recipe.goal(goal, deps, actions)
+	return recipe.phony(goal, deps, actions)
 
 def rule(ress, deps, *actions):
 	"""Build a custom rule with actions."""

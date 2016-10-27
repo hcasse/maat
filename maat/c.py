@@ -208,6 +208,7 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 		d = file(maat_dir / o.path.parent().relative_to_top())
 		if not d.recipe:
 			recipe.ActionRecipe([d], [], action.MakeDir(d.path))
+			d.set_hidden()
 		o.recipe.deps.append(d)
 		df = (d.path / (o.path.get_base().get_file() + ".d"))
 		added = added + " -MMD -MF %s" % df.relative_to_cur()
@@ -303,7 +304,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL_TO = "", DYN_INSTALL_TO = ""
 
 	# build main goal
 	lib = file(name)
-	r = recipe.phony(lib, todo)
+	r = recipe.meta(lib, todo)
 	recipe.add_alias(lib, name)
 	lib.PROVIDE_PATH = lib.path.parent()
 	lib.PROVIDE_LIB = name

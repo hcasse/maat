@@ -23,7 +23,7 @@ import sys
 def list_goals(ctx = io.Context()):
 	"""List goals."""
 
-	l = [f for f in recipe.file_db.values() if f.is_goal and not f.is_phony]
+	l = [f for f in recipe.file_db.values() if f.is_phony and not f.is_hidden]
 	l.sort()
 	ll = max([len(str(f)) for f in l])
 	for f in l:

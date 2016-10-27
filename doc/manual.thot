@@ -465,7 +465,7 @@ Resources to examine files includes:
 ===== Goals and Rules =====
 
 The following commands may be used to manage goals and rules:
-  * ''goal''(//goal//, //deps//, //actions//) -- build a new goal (not matching a real file).
+  * ''phony''(//goal//, //deps//, //actions//) -- build a new phony (not matching an actual file).
   * ''rule''(//ress//, //deps//, //actions//) -- build a specific rule for a particular file.
 
 The following variables are used:
@@ -492,6 +492,12 @@ The example below shows how to add a console action to package
 a directory:
 <code python>
 rule("dir.tgz", "dir", "tar cvfz dir.tgz dir")
+</code>
+
+You can also use phony rule to trigger actions that does not correspond
+to files as below:
+<code python>
+phony("autodoc", [], "doxygen")
 </code>
 
 

@@ -21,6 +21,7 @@ import env
 import io
 import os
 import os.path
+import sign
 import sys
 
 file_db = { }		# file database
@@ -29,36 +30,47 @@ ext_db = { }		# extension database
 
 # base classes
 class File(env.MapEnv):
-	"""Representation of files."""
+	"""Representation of files. Several properties defines a file:
+	* sticky files are files that must remains after build,
+	* phony files does not represent real files and their action are
+	  always performed,
+	* meta files are goals that are executed only if one of their
+	  dependency is updated,
+	* hidden means that the execution is not displayed,
+	* target are files that are targets."""
 	
 	def __init__(self, path):
 		env.MapEnv.__init__(self, path.get_file() , env.cenv.path, env.cenv)
 		self.path = path
 		file_db[str(path)] = self
 		self.recipe = None
-		self.is_goal = False
-		self.is_target = False
 		self.is_sticky = False
 		self.is_phony = False
+		self.is_meta = False
+		self.is_hidden = False
+		self.is_target = False
 		self.actual_path = None
 
 	def set_phony(self):
 		"""Mark the file as phony, i.e. does not match a real file."""
 		self.is_phony = True
 
-	def set_goal(self):
-		"""Mark a file as a goal."""
-		self.is_goal = True
-		self.is_phony = True
-	
+	def set_meta(self):
+		"""Mark a file as meta."""
+		self.is_meta = True
+
 	def set_target(self):
 		"""Mark a file as a target."""
 		self.is_target = True
 	
+	def set_hidden(self):
+		"""Mark a file as a hidden."""
+		self.is_hidden = True
+	
 	def set_sticky(self):
 		"""Mark a file as sticky, that is, a final target (not intermediate)."""
 		self.sticky = True
-
+	
 	def actual(self):
 		"""Get the actual path of the file. For target file, this path
 		is relative to BPATH variable."""
@@ -84,6 +96,8 @@ class File(env.MapEnv):
 	def time(self):
 		"""Get the last update time of the file."""
 		if self.is_phony:
+			return 0
+		elif self.is_meta:
 			if self.recipe:
 				return max([d.time() for d in self.recipe.deps])
 			else:
@@ -93,12 +107,45 @@ class File(env.MapEnv):
 	
 	def younger_than(self, f):
 		"""Test if the current file is younger than the given one."""
-		if self.is_phony:
+		if (not f.is_meta and not f.is_phony) and not f.actual().exists():
 			return True
 		elif f.actual().is_dir():
 			return False
 		else:
 			return self.time() < f.time()
+
+	def needs_update(self):
+		"""Test if the current file needs to be updated:
+		* it doesn't have a recipe
+		* if it doesn't exist and it is not phony
+		* if the signature has changed,
+		* if the dependencies are younger."""
+		if self.is_phony:
+			#print "DEBUG: %s updated because it is phony!" % self
+			return True
+		elif not self.is_meta and not self.actual().exists():
+			#print "DEBUG: %s updated because it doesn't exist!" % self
+			return True
+		elif not sign.test(self):
+			#print "DEBUG: %s updated because signature changed!" % self
+			return True
+		elif not self.recipe:
+			return False
+		else:
+			for d in self.recipe.deps:
+				if d.needs_update() or self.younger_than(d):
+					#print "DEBUG: %s updated because it is younger than %s!" % (self, d)
+					return True
+			return False
+
+	def collect_updates(self, targets):
+		"""Collect the files that needs to be updated and store them
+		in the targets list."""
+		if self.recipe:
+			for d in self.recipe.deps:
+				d.collect_updates(targets)
+		if self not in targets and self.needs_update():
+			targets.append(self)
 	
 	def __str__(self):
 		path = self.actual()
@@ -367,25 +414,36 @@ def rule(ress, deps, *actions):
 	ActionRecipe(ress, deps, make_actions(actions))
 
 
-def goal(goal, deps, actions = action.Action()):
-	"""Build a goal with the following dependencies."""
+def phony(goal, deps, actions = action.Action()):
+	"""Build a goal with the following dependencies that does not
+	match a real file."""
 	path = common.Path(env.cenv.path) / goal
 	file = get_file(str(path))
 	if file.recipe:
 		common.script_error("a goal already named '%s' already exist!" % goal)
 	else:
-		file.set_goal()
+		file.set_phony()
 		ActionRecipe(goal, deps, actions)
 
 
-def phony(name, deps, *actions):
-	"""Build a phony rule, that is, a rule without action
+def hidden(name, deps, *actions):
+	"""Build an hidden and phony rule, that is, a rule without action
 	grouping several other rules in its dependencies.
 	The result is the recipe itself."""
 	a = ActionRecipe(name, deps, *actions)
 	a.ress[0].set_phony()
+	a.ress[0].set_hidden()
 	return a
-	
+
+
+def meta(name, deps, *actions):
+	"""Build an hidden and meta rule, that is, a rule 
+	grouping several other rules in its dependencies."""
+	a = ActionRecipe(name, deps, *actions)
+	a.ress[0].set_meta()
+	#a.ress[0].set_hidden()
+	return a
+
 
 def find_exact(name):
 	"""Look if an entity with exactly the given name exists and return it."""

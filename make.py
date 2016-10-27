@@ -2,9 +2,9 @@
 from maat import *
 import maat.config as config
 
-goal("doc", ["doc/manual.thot"], "cd doc; ../../thot/thot.py manual.thot -DHTML_TEMPLATE=theme/template.html -DHTML_ONE_FILE_PER=chapter")
+phony("doc", ["doc/manual.thot"], "cd doc; ../../thot/thot.py manual.thot -DHTML_TEMPLATE=theme/template.html -DHTML_ONE_FILE_PER=chapter")
 
-goal("autodoc", [],
+phony("autodoc", [],
 	[
 		"mkdir -p autodoc",
 		"epydoc --html maat -o autodoc/ -v"

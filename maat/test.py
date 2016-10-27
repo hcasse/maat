@@ -43,7 +43,7 @@ class Case(recipe.Recipe):
 		recipe.Recipe.__init__(self, [maat.path(name)], deps)
 		self.tests = []
 		self.name = name
-		recipe.get_file(name).is_goal = True
+		recipe.get_file(name).set_phony()
 		global TEST_CASES
 		TEST_CASES.append(self.ress[0])
 
@@ -74,7 +74,7 @@ class Test(recipe.Recipe):
 	def __init__(self, case, name, deps):
 		recipe.Recipe.__init__(self, [name], deps)
 		self.name = name
-		recipe.get_file(name).is_goal = True
+		recipe.get_file(name).set_phony()
 		self.case = case
 		case.add(self)
 		self.ress[0].set_phony()
@@ -208,7 +208,7 @@ def post_init():
 	"""Initialize the test goal."""
 	path = env.cenv.path / "test"
 	if not recipe.file_db.has_key(path):
-		maat.goal("test", TEST_CASES)
+		maat.phony("test", TEST_CASES)
 
 
 maat.post_inits.append(maat.FunDelegate(post_init))
