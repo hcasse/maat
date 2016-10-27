@@ -7,6 +7,7 @@
 [ ] add option to dump selected variables
 [ ] add option to call configuration program and get back result in variables
 [ ] add option for dry run
+[ ] add special file names to design shortly source and targets
 [X] add option to dump recipe database
 [X] add option to list goals
 
@@ -29,6 +30,13 @@
 [X] add map for symbolic names (program, library, etc)
 [X] add support for building in a different directory
 [X]	add "[", "]" syntax to environment
+
+===== Actions =====
+
+[ ] add mode (error, warning, fatal, ...) to show command.
+[ ] add makefile() command to create a file containing the given content.
+[ ] supports lambdas as action
+
 
 ===== Documentation =====
 
@@ -63,11 +71,18 @@
 [X] document it
 
 
+===== Install Module =====
+
+[ ] supports string as a regular expression in filters
+[ ] make the installation process dependent on the current OS
+
+
 ===== New Modules =====
 
 [ ] Java support
 [ ] OCAML support
 [ ] Python support
+[ ] Ada support
 [ ] integrate a packaging system (allowing retrieval and automatically dependency build)
 
 
@@ -77,7 +92,3 @@
  
 
 
-===== Actions =====
-
-[ ] add mode (error, warning, fatal, ...) to show command.
-[ ] add makefile() command to create a file containing the given content.

@@ -10,9 +10,9 @@
 
 ===== Disclaimer =====
 
-@(MAAT) is the result of my frustation in the use of GnuMake,
+@(MAAT) is the result of my frustration in the use of GNU Make,
 CMake and AutoTools. There are lots of alternatives tools (particularly
-for GnuMake) like Scons, AAP, Ant, etc but they don't maintain
+for GNU Make) like Scons, AAP, Ant, etc but they don't maintain
 the nice principle of recipes (also known as rules).
 
 A recipe is formed of three components:
@@ -20,25 +20,25 @@ A recipe is formed of three components:
   * the dependency files that the targets are build from,
   * the action that performs the build of the target from the dependencies.
 
-The concept is very simple: if the targets are older than the depedencies,
+The concept is very simple: if the targets are older than the dependencies,
 the action is executed and must build the target files using the dependency files.
 Such a simple is very beautiful because it's enough to represent most building
 process of most applications including executables, static and dynamic libraries
 and anything where exists transforming program on files. But most alternatives
-to GnuMake dropped such a treasure.
+to GNU Make dropped such a treasure.
 
-Yet, GnuMake (and its ancestors) has two main drawbacks:
-  * unefficient solving process of generic recipes causing combinatory explosion of file lookup,
+Yet, GNU Make (and its ancestors) has two main drawbacks:
+  * inefficient solving process of generic recipes causing combinatorial explosion of file lookup,
   * inadequate script layer that makes the task of building automatically recipes exceedingly hard and non-modular.
 
 @(MAAT) try to solve both problems while keeping the concept of generic recipes.
 The first issue is solved by reducing the domain of lookup for automatic recipes:
-only dependency strings between a source file and its final object are considereed.
+only dependency strings between a source file and its final object are considered.
 The second issue is simply achieved using Python as the script system.
 Fortunately, Python alone is not enough and @(MAAT) provides lots of common facilities
 to create and control recipes.
 
-About building systems like CMake or BuildTools, the integration inside
+Concerning building systems like CMake or AutoTools, the integration inside
 @(MAAT) comes from the easy statement that there is no reason to separate
 building configuration and building itself. Moreover, the building scripts,
 where programs and sources are defined, have a better knowledge of what is
@@ -69,14 +69,71 @@ to reflect environment stack.
   * Configuration customizable by hand.
   * Readable display of the make process.
   * Fast resolution of automatic dependencies.
-  * Full support for target-dependencies-action tryptic allowing
+  * Full support for target/dependencies/action abstraction allowing
 write of custom rules.
   * Basic OS independent file operation primitives.
-  * Build performed in a specific directory.
+  * Support for specific build directory.
   * Non-intrusive tool file management.
-  * Automatic handling of basic goals: all, clean, distclean.
+  * Automatic handling of basic goals: all, clean, distclean, etc.
   * Very fast learning curve for Python programmers.
   * Fast learning curve for non-Python programmers.
+  * Test module for fast and easy testing.
+  * Composability of scripts for free (thanks to Python).
+
+
+===== To do =====
+
+Lots of work need to be done before @(MAAT) reaches the power of
+Autotools or CMake. The future development encompasses:
+  * parallel build,
+  * flex and bison support in C module,
+  * OCAML support,
+  * Ada support,
+  * Java support,
+  * Python support,
+  * packaging of the application / library. 
+
+
+===== FAQ =====
+
+**Why is @(MAAT) faster than GNU Make with implicit rules?**
+
+The main with GNU Make and implicit rules is that it has to explore
+the whole set of derivation between any involved file and any
+possible source of it and the complexity of this work depends on the
+number of file and of explicit rules.
+
+@(MAAT) supports a form of implicit rule but the lookup is only
+performed on the request of a particular rule and this request is
+always based on the bottom-level source file and designs a particular
+type of target file.
+
+For example, the ''c.program'' rule can take different types of sources
+(''.c'', ''.cpp'', ''.l'', etc). When a ''.l'' source is found,
+''c.program'' will ask for a ''.o'' corresponding to its sources.
+If these sources includes a file named ''lexer.l'', @(MAAT) will
+only look on the implicit paths starting at ''.l'' and ending by ''.o''.
+It is equivalent to traverse a small graph and the found path will be:
+  * make ''.c'' from ''.l'',
+  * make ''.o'' from ''.c'.
+
+**Why sticking to the source/dependency/action abstraction?**
+
+Some build system (like ant) have give up the source/dependency/action
+abstraction. This usually means that tare he build process is described as
+a list of actions but the products of the compilation often are
+interdependent. This means that the dependencies has to be expressed
+in a different way but they stay here.
+
+Second, an abstraction is a good thing: the developer don't need to be
+bothered with the order and the details of the compilation; this is the
+task of the build system and the source/dependency/action abstraction is
+easy to understand.
+
+Third, the source/dependency/action abstraction is also easy to extend.
+Some compilation method is missing or the developer needs to add its
+own goal: it is quite easy to express it with this abstraction and
+to link it with other goals.
 
 
 ====== Writing Scripts ======
@@ -84,7 +141,7 @@ write of custom rules.
 ===== Hello, World! =====
 
 Let's start with the very classic "Hello, World" example. With your
-prefered editor, create a file named ''hello.c'' and enter its content:
+preferred editor, create a file named ''hello.c'' and enter its content:
 
 <code c>
 #include <stdio.h>
@@ -116,7 +173,7 @@ The following output will appear meaning that the building is successful:
  cc  -o hello hello.o 
 </code>
 
-As no error is displayed, compulation is successful and you can test your first program:
+As no error is displayed, the compilation is successful and you can test your first program:
 <code>
 >./hello
 Hello, World!
@@ -189,7 +246,7 @@ the project with a command like:
 And to replace //BUILD_DIRECTORY// by the absolute or the relative path
 to the build directory.
 
-Anotehr way to customize the build directory after configuration
+Another way to customize the build directory after configuration
 is to edit the file ''config.py'' and to add a line like:
 <code python>
 BPATH = "BUILD_DIRECTORY"
@@ -206,12 +263,12 @@ from the fact that most actions are translated to calls to line commands.
 
 In @(MAAT), all objects are environments: files, script, etc. In addition,
 the environment are stacked: each environment has as parent environment
-the one where it is created. For files, the aprent environment is the one
+the one where it is created. For files, the parent environment is the one
 of the script using the file. This stack is used to resolve variables
-from the higher enviroment to the lower one in the stack. Therefore,
+from the higher environment to the lower one in the stack. Therefore,
 the script behaviour or variables are determined by the stack of script
-including it providing a modular flavor to @(MAAT). The lowest environment
-is the OS variable environment meaning that the configuraton may be
+including it providing a modular flavour to @(MAAT). The lowest environment
+is the OS variable environment meaning that the configuration may be
 provided by defining variable in your preferred shell.
 
 To define a variable in your script environment is as easy as defined
@@ -247,11 +304,11 @@ import maat.env as env
 </code>
 
 The following environment are available:
-  * ''env.osenv'' -- environment representing OS variables,
-  * ''env.rootenv'' -- environment contaning built-in definitions,
-  * ''env.confenv'' -- environment containing the configuration,
-  * ''env.topenv'' -- environment of the top-level script,
-  * ''env.cenv'' -- current environment.
+  * ''env.os'' -- environment representing OS variables,
+  * ''env.root'' -- environment containing built-in definitions,
+  * ''env.conf'' -- environment containing the configuration,
+  * ''env.top'' -- environment of the top-level script,
+  * ''env.curenv'' -- current environment.
 
 
 ====== Configuration Module ======
@@ -261,7 +318,7 @@ The following environment are available:
 The configuration module builds a file named ''config.py'' that is included
 in the make process. It contains configuration items depending on the current
 host about executable paths, library paths or anything that may be variable
-between OSes or any configuration item used to tune the compilation of a
+between OS or any configuration item used to tune the compilation of a
 project.
 
 Most modules provided with @(MAAT) will provide their own configuration
@@ -293,7 +350,7 @@ your preferred one or to provide by hand a configuration not automatically
 resolved). Whatever the modification you perform on ''config.py'' file,
 it will be preserved even if several ''./make.py config'' are performed
 ((However, even if ''config.py'' is plain Python code, @(MAAT) is only
-able to regenerate simple litteral values: any other code put inside
+able to regenerate simple literal values: any other code put inside
 ''config.py'' will be lost at next ''config'' invocation.)).
  
 The ''config.py'' generated above will look like this:
@@ -342,7 +399,7 @@ config.find_program("Brower", BROWSER, ["firefox", "opera", "galeon"])
 
 The configuration is based on object of type config.Config(). These
 objects are initialized with the label of the configuration, a//blocking//
-paramter informing if the whole configuration must fail if the lookup fails
+parameter informing if the whole configuration must fail if the lookup fails
 and a list of dependent configurations. The current configuration will
 only be tested if all dependencies are resolved.
 
@@ -364,12 +421,12 @@ class IsGCC(config.Config):
 		config.Config.__init__(self, blocking, [maat.c.CONFIG_CC])
 	
 	def done(self):
-		return env.confenv.IS_GCC
+		return env.conf.IS_GCC
 	
 	def configure(self, c):
-		s = maat.action.dump([env.confenv.CC, "--version"])
+		s = maat.action.dump([env.conf.CC, "--version"])
 		if s and s.startswith("gcc "):
-			env.confenv.IS_GCC = True
+			env.conf.IS_GCC = True
 </code>
 
 
@@ -415,7 +472,7 @@ The following variables are used:
   * ''DESCRIPTION'' put on a goal file, provide description for the goal for option "-l".
 
 Basically, writing a rule is as simple as writing:
-<code>
+<code python>
 rule(target_file, source_files, actions)
 </code>
 With:
@@ -424,6 +481,18 @@ With:
   * //actions// -- either a single action, or a list of actions.
 Actions may be commands as shown presented in the next section
 or simple strings that will interpreted as shell commands.
+
+For example, to create a rule by moving a file named ''config.sample''
+to ''app.config'', it is straight-forwardly written by:
+<code python>
+rule("app.config", "config.sample", move("config.sample", "app.config"))
+</code>
+
+The example below shows how to add a console action to package
+a directory:
+<code python>
+rule("dir.tgz", "dir", "tar cvfz dir.tgz dir")
+</code>
 
 
 ===== Actions =====
@@ -446,12 +515,13 @@ files; if ignore_error is true, any error during the removal will be ignored.
 ====== Special Variables ======
 
   * ''BPATH'' -- path used to build files in (as default, the directory containing the script).
-
+  * ''PROJECT'' -- project name.
+  * ''VERSION'' -- current version of the project.
 
 
 ====== Standard Environment ======
 
-The standard environment provides a consistant environment to let other modules
+The standard environment provides a consistent environment to let other modules
 interact in a convenient. It is not mandatory (you can provide your own
 standard module if needed) but this may make interaction with other modules
 more difficult.
@@ -567,8 +637,8 @@ Build a C/C++ static library from a list of sources.
 //SOURCES// is the list of sources.
 
 The //OPTIONS// may be a combination of:
-  * ''type'' -- select the type of libary to build (''static'' (default)
-for static libary, ''dynamic'' for dynamic or shared library, ''both'' for both types),
+  * ''type'' -- select the type of library to build (''static'' (default)
+for static library, ''dynamic'' for dynamic or shared library, ''both'' for both types),
   * ''CFLAGS'' -- ''CFLAGS'' to apply to each C source,
   * ''CXXFLAGS'' -- ''CXXFLAGS'' to apply to each C++ source,
   * ''PREFIX'' -- prefix for producing static library file (system default
@@ -592,10 +662,10 @@ The following //OPTIONS// applies only when a dynamic/shared is built:
 
 When a list of names is passed in the ''LIBS'' option of ''c.program'',
 the module will be perform an automatic lookup:
-  * if a C libary matches the library name, it is used and the building
+  * if a C library matches the library name, it is used and the building
 order will take into account this dependency;
-  * else the libary is considered to be part of the OS and linked with
-''-l'' opetion.
+  * else the library is considered to be part of the OS and linked with
+''-l'' option.
 
 ===== Common Flags =====
 
@@ -608,7 +678,7 @@ source file, object file, program, etc.
   * ''CXXFLAGS'' -- flags for C++ compilation [object, source],
   * ''LDFLAGS'' -- link flags for C/C++ program building [program].
 
-The example show to define CFLAGS for all objects and how to specialize
+The example show to define ''CFLAGS'' for all objects and how to specialize
 for a particular object:
 <code python>
 from maat import *

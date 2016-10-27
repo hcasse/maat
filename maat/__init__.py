@@ -138,33 +138,40 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 
 
 # make process
-def make_rec(f, ctx):
-	
-	# apply dependencies
+def collect_todo(f, todo):
+	"""Compute the list of goals to build."""
+	cnt = 0
 	if f.recipe:
 		for d in f.recipe.deps:
-			make_rec(d, ctx)
-		
-	# need update?
+			collect_todo(d, todo)
 	update = f.is_goal
-	if not f.actual().exists():
-		if not f.recipe:
-			common.error("file '%s' does not exist and no recipe is able to build it" % f.path)
+	if not update:
+		if not f.actual().exists():
+			if not f.recipe:
+				common.error("file '%s' does not exist and no recipe is able to build it" % f.path)
+			else:
+				print "DEBUG: %s does not exist!" % f
+				update = True
 		else:
-			update = True
-	else:
-		if f.recipe:
-			for d in f.recipe.deps:
-				if f.younger_than(d):
-					update = True
-					break
-		if not update:
-			update = not sign.test(f)
-	
-	# if needed, perform update
-	if update:
+			if f.recipe:
+				for d in f.recipe.deps:
+					if not d.actual().exists() or f.younger_than(d):
+						print "DEBUG: %s to do because of %s" % (f, d)
+						update = True
+						break
+			if not update and not sign.test(f):
+				update = True
+				print "DEBUG: %s to do because of signature change!" % f
+	if update and not f in todo:
+		todo.append(f)
+
+
+def make_todo(todo, ctx):
+	cstat = 0
+	tstat = len(todo)	
+	for f in todo:
 		
-		# ensure directory exists
+		# ensure the target directory exists
 		for r in f.recipe.ress:
 			ppath = r.actual().parent()
 			if not ppath.exists():
@@ -177,9 +184,11 @@ def make_rec(f, ctx):
 		push_env(f.recipe.env)
 		common.Path(f.recipe.cwd).set_cur()
 		if f.is_goal or not f.is_phony:
-			ctx.print_info("Making %s" % f.path.relative_to(env.top.path))
+			ctx.print_info("[%3d%%] Making %s" % (cstat * 100 / tstat, f.path.relative_to(env.top.path)))
 		f.recipe.action(ctx)
 		pop_env()
+		sign.record(f)
+		cstat = cstat + 1
 
 
 def make(ctx = io.Context()):
@@ -223,9 +232,10 @@ def make_work(ctx = io.Context()):
 				global todo
 				if not todo:
 					todo = ["all"]
+				targets = []
 				for a in todo:
-					f = recipe.get_file(a)
-					make_rec(f, ctx)
+					collect_todo(recipe.get_file(a), targets)
+					make_todo(targets, ctx)
 				ctx.print_success("all is fine!");
 				sign.save(ctx)
 			except common.MaatError, e:

@@ -100,7 +100,7 @@ class Context:
 
 	def print_success(self, msg):
 		"""Print a success message."""
-		sys.stderr.write(BOLD + GREEN + "SUCCESS: " + msg + str(NORMAL) + "\n")
+		sys.stderr.write(BOLD + GREEN + "[100%] " + msg + str(NORMAL) + "\n")
 
 	def print_action(self, msg):
 		"""Print a beginning action."""

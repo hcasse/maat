@@ -46,6 +46,8 @@ def load(ctx = io.DEF):
 			if not isinstance(v, dict):
 				raise IOError("bad file content")
 			signs = v
+			#for k in signs.keys():
+			#	print "DEBUG sign %s: %s" % (k, signs[k])
 		except IOError, e:
 			ctx.print_warning("signature file cannot be open (%s). This may cause some unexpected recompilations." % e)
 			update = True
@@ -88,12 +90,26 @@ def test(file):
 
 		# signature does not match
 		else:
-			signs[k] = s
-			update = True
+			#print "DEBUG: sign of %s (%s) does not match %s" % (k, s, signs[k])
 			return False
 	
 	# no signature available
 	except KeyError, e:
+		#print "DEBUG: %s has no signature!" % k
 		signs[k] = s
 		update = True
 		return False
+
+
+def record(file):
+	"""Record the signature for making the given file."""
+	k = str(file)
+	s = file.recipe.signature()
+	try:
+		ss = signs[k]
+	except KeyError:
+		ss = None
+	if s <> ss:
+		signs[k] = s
+		update = True
+		#print "DEBUG: record signature of %s (%s)" % (k, s)

@@ -95,6 +95,8 @@ class File(env.MapEnv):
 		"""Test if the current file is younger than the given one."""
 		if self.is_phony:
 			return True
+		elif f.actual().is_dir():
+			return False
 		else:
 			return self.time() < f.time()
 	
