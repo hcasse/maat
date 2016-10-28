@@ -79,6 +79,7 @@ class Context:
 	command_ena = False
 	info_ena = True
 	quiet = False
+	complete_quiet = False
 	action = None
 	flushed = False
 	
@@ -102,18 +103,21 @@ class Context:
 
 	def print_error(self, msg):
 		"""Print an error message."""
-		self.handle_action()
-		sys.stderr.write(BOLD + RED + "ERROR: " + str(msg) + NORMAL + "\n")
+		if not self.complete_quiet:
+			self.handle_action()
+			sys.stderr.write(BOLD + RED + "ERROR: " + str(msg) + NORMAL + "\n")
 	
 	def print_warning(self, msg):
 		"""Print a warning message."""
-		self.handle_action()
-		sys.stderr.write(BOLD + YELLOW + "WARNING: " + str(msg) + NORMAL + "\n")
+		if not self.complete_quiet:
+			self.handle_action()
+			sys.stderr.write(BOLD + YELLOW + "WARNING: " + str(msg) + NORMAL + "\n")
 
 	def print_success(self, msg):
 		"""Print a success message."""
-		self.handle_action()
-		sys.stderr.write(BOLD + GREEN + "[100%] " + msg + str(NORMAL) + "\n")
+		if not self.complete_quiet:
+			self.handle_action()
+			sys.stderr.write(BOLD + GREEN + "[100%] " + msg + str(NORMAL) + "\n")
 
 	def print_action(self, msg):
 		"""Print a beginning action."""

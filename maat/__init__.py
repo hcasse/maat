@@ -104,6 +104,7 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser.add_argument('-p', '--print-data-base', action="store_true", default=False, help="print the recipe database")
 	parser.add_argument('-n', '--dry-run', '--just-print',  action="store_true", default=False, help="display the commands but does not execute them")
 	parser.add_argument('-t', '--time', action="store_true", default=False, help="display processing time")
+	parser.add_argument('-s', '--quiet', '--silent', action="store_true", default=False, help="work in quiet mode (doesn't display anything)")
 
 	# get arguments
 	args = parser.parse_args()
@@ -119,6 +120,7 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 	do_print_db = args.print_data_base
 	do_dry = args.dry_run
 	do_time = args.time
+	do_quiet = args.quiet
 
 	# parse free arguments
 	for a in args.free:
@@ -195,6 +197,9 @@ def make_work(ctx = io.Context()):
 	ctx = io.Context()
 	if verbose:
 		ctx.command_ena = True
+	if do_quiet:
+		ctx.quiet = True
+		ctx.complete_quiet = True
 
 	# post-initializations
 	for post in post_inits:
@@ -235,7 +240,6 @@ def make_work(ctx = io.Context()):
 			except common.MaatError, e:
 				ctx.print_error(e)
 			except KeyboardInterrupt, e:
-				sys.stderr.write("\n")
 				ctx.print_error("action interrupted by user!")
 
 

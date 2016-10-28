@@ -10,8 +10,8 @@
 [ ] add -B, --always-make to (re)build all!
 [ ] add -j, --jobs N for parallel compilation
 [ ] add -q, --question with return code equal to 0 if not update is needed
-[ ] add -s, --silent, --quiet for not output
 [ ] add -b, --brief for brief output (work bar + currently processed file)
+[X] add -s, --silent, --quiet for not output
 [X] add -t, --time option to show compilation time
 [X] add option for dry run
 [X] add option to dump recipe database
