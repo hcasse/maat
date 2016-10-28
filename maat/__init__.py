@@ -102,6 +102,7 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser.add_argument('-l', '--list', action="store_true", default=False, help="display available goals")
 	parser.add_argument('-V', '--version', action="store_true", default=False, help="display the current version")
 	parser.add_argument('-p', '--print-data-base', action="store_true", default=False, help="print the recipe database")
+	parser.add_argument('-n', '--dry-run', '--just-print',  action="store_true", default=False, help="display the commands but does not execute them")
 
 	# get arguments
 	args = parser.parse_args()
@@ -115,6 +116,7 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 	do_config = False
 	do_list = args.list
 	do_print_db = args.print_data_base
+	do_dry = args.dry_run
 
 	# parse free arguments
 	for a in args.free:
@@ -138,6 +140,8 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 
 
 def make_todo(todo, ctx):
+	if do_dry:
+		ctx.print_warning("dry run!")
 	cstat = 0
 	tstat = len(todo)	
 	for f in todo:
@@ -152,13 +156,15 @@ def make_todo(todo, ctx):
 					common.error(env.ElfError(str(e)))
 		
 		# perform the recipe action
-		push_env(f.recipe.env)
-		common.Path(f.recipe.cwd).set_cur()
+		if not do_dry:
+			push_env(f.recipe.env)
+			common.Path(f.recipe.cwd).set_cur()
 		if not f.is_hidden:
 			ctx.print_info("[%3d%%] Making %s" % (cstat * 100 / tstat, f.path.relative_to(env.top.path)))
-		f.recipe.action(ctx)
-		pop_env()
-		sign.record(f)
+		if not do_dry:
+			f.recipe.action(ctx)
+			pop_env()
+			sign.record(f)
 		cstat = cstat + 1
 
 
@@ -208,7 +214,8 @@ def make_work(ctx = io.Context()):
 					recipe.get_file(a).collect_updates(targets)
 				make_todo(targets, ctx)
 				ctx.print_success("all is fine!");
-				sign.save(ctx)
+				if not do_dry:
+					sign.save(ctx)
 			except common.MaatError, e:
 				ctx.print_error(e)
 			except KeyboardInterrupt, e:

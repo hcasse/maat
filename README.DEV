@@ -3,11 +3,12 @@
 
 ===== Command =====
 
-[ ] add option to embed elfmake in the current projet (making easier broadcasting of ElfMake)
-[ ] add option to dump selected variables
-[ ] add option to call configuration program and get back result in variables
 [ ] add option for dry run
+[ ] add option to embed elfmake in the current projet (making easier broadcasting of ElfMake)
+[ ] add option to call configuration program and get back result in variables
 [ ] add special file names to design shortly source and targets
+[ ] add option to show compilation time
+[ ] add option to dump selected variables
 [X] add option to dump recipe database
 [X] add option to list goals
 
