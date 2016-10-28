@@ -8,8 +8,8 @@
 [ ] add special file names to design shortly source and targets
 [ ] add option to dump selected variables
 [ ] add -j, --jobs N for parallel compilation
-[ ] add -q, --question with return code equal to 0 if not update is needed
 [ ] add -b, --brief for brief output (work bar + currently processed file)
+[X] add -q, --question with return code equal to 0 if not update is needed
 [X] add -B, --always-make to (re)build all!
 [X] add -s, --silent, --quiet for not output
 [X] add -t, --time option to show compilation time
@@ -26,7 +26,6 @@
 [ ] support invocation from non-top make.py
 [ ] add command to support file generation from variable content
 [ ] add goal to build a distribution (source, binary, etc)
-[ ] add parallel run
 [ ] add file update resolution based on file content
 [ ] add automatic download of dependencies (from OS or from network)
 [X] Path are now iterable if they are directories and return their content. 

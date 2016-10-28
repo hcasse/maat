@@ -296,4 +296,3 @@ def format_duration(d):
 def time():
 	"""Get the current time (in s)."""
 	return pytime.time()
-

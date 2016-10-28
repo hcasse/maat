@@ -477,7 +477,7 @@ rule(target_file, source_files, actions)
 </code>
 With:
   * //target_file// -- path of the file to build,
-  * // source_files// -- either a source file path, or a list of source file paths,
+  * //source_files// -- either a source file path, or a list of source file paths,
   * //actions// -- either a single action, or a list of actions.
 Actions may be commands as shown presented in the next section
 or simple strings that will interpreted as shell commands.

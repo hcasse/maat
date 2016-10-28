@@ -106,6 +106,7 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser.add_argument('-t', '--time', action="store_true", default=False, help="display processing time")
 	parser.add_argument('-s', '--quiet', '--silent', action="store_true", default=False, help="work in quiet mode (doesn't display anything)")
 	parser.add_argument('-B', '--always-make', action="store_true", default=False, help="rebuild all without checking for updates")
+	parser.add_argument('-q', '--question', action="store_true", default=False, help="test if something has to be updated (result in return code)")
 
 	# get arguments
 	args = parser.parse_args()
@@ -123,6 +124,7 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 	do_time = args.time
 	do_quiet = args.quiet
 	do_always = args.always_make
+	do_question = args.question
 
 	# parse free arguments
 	for a in args.free:
@@ -226,7 +228,8 @@ def make_work(ctx = io.Context()):
 				global todo
 				if not todo:
 					todo = ["all"]
-				start_time = common.time()
+				if do_time:
+					start_time = common.time()
 				sign.load(ctx)
 				for a in todo:
 					targets = []
@@ -234,18 +237,27 @@ def make_work(ctx = io.Context()):
 						recipe.get_file(a).collect_all(targets)
 					else:
 						recipe.get_file(a).collect_updates(targets)
-					make_todo(targets, ctx)
-				duration = common.time() - start_time
+					if do_question:
+						if any(not t.is_phony and not t.is_meta for t in targets):
+							sys.exit(1)
+					else:
+						make_todo(targets, ctx)
+				if do_question:
+					sys.exit(0)
 				if do_time:
+					duration = common.time() - start_time
 					ctx.print_success("all is fine (%s)!" % common.format_duration(duration));
 				else:
 					ctx.print_success("all is fine!");
 				if not do_dry:
 					sign.save(ctx)
+				sys.exit(0)
 			except common.MaatError, e:
 				ctx.print_error(e)
+				sys.exit(1)
 			except KeyboardInterrupt, e:
 				ctx.print_error("action interrupted by user!")
+				sys.exit(2)
 
 
 def make_at_exit():
