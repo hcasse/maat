@@ -105,6 +105,7 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser.add_argument('-n', '--dry-run', '--just-print',  action="store_true", default=False, help="display the commands but does not execute them")
 	parser.add_argument('-t', '--time', action="store_true", default=False, help="display processing time")
 	parser.add_argument('-s', '--quiet', '--silent', action="store_true", default=False, help="work in quiet mode (doesn't display anything)")
+	parser.add_argument('-B', '--always-make', action="store_true", default=False, help="rebuild all without checking for updates")
 
 	# get arguments
 	args = parser.parse_args()
@@ -121,6 +122,7 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 	do_dry = args.dry_run
 	do_time = args.time
 	do_quiet = args.quiet
+	do_always = args.always_make
 
 	# parse free arguments
 	for a in args.free:
@@ -221,15 +223,18 @@ def make_work(ctx = io.Context()):
 		# do the build
 		else:
 			try:
-				sign.load(ctx)
 				global todo
 				if not todo:
 					todo = ["all"]
-				targets = []
-				for a in todo:
-					recipe.get_file(a).collect_updates(targets)
 				start_time = common.time()
-				make_todo(targets, ctx)
+				sign.load(ctx)
+				for a in todo:
+					targets = []
+					if do_always:
+						recipe.get_file(a).collect_all(targets)
+					else:
+						recipe.get_file(a).collect_updates(targets)
+					make_todo(targets, ctx)
 				duration = common.time() - start_time
 				if do_time:
 					ctx.print_success("all is fine (%s)!" % common.format_duration(duration));

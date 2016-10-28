@@ -7,10 +7,10 @@
 [ ] add option to call configuration program and get back result in variables
 [ ] add special file names to design shortly source and targets
 [ ] add option to dump selected variables
-[ ] add -B, --always-make to (re)build all!
 [ ] add -j, --jobs N for parallel compilation
 [ ] add -q, --question with return code equal to 0 if not update is needed
 [ ] add -b, --brief for brief output (work bar + currently processed file)
+[X] add -B, --always-make to (re)build all!
 [X] add -s, --silent, --quiet for not output
 [X] add -t, --time option to show compilation time
 [X] add option for dry run

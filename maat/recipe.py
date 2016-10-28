@@ -147,6 +147,13 @@ class File(env.MapEnv):
 		if self not in targets and self.needs_update():
 			targets.append(self)
 	
+	def collect_all(self, targets):
+		"""Collect all the files that may be made."""
+		if self.recipe and self not in targets:
+			for d in self.recipe.deps:
+				d.collect_all(targets)
+			targets.append(self)
+	
 	def __str__(self):
 		path = self.actual()
 		if path.prefixed_by(env.topdir) or path.prefixed_by(env.curdir()):
