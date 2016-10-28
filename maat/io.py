@@ -79,27 +79,40 @@ class Context:
 	command_ena = False
 	info_ena = True
 	quiet = False
+	action = None
+	flushed = False
+	
+	def handle_action(self):
+		"""Manage a pending action display."""
+		if self.action and not self.flushed:
+			sys.stdout.write("\n")
+			self.flushed = True
 	
 	def print_command(self, cmd):
 		"""Print a command before running it."""
 		if not self.quiet and self.command_ena:
+			self.handle_action()
 			sys.stdout.write(CYAN + "> " + str(cmd) + NORMAL + "\n")
 	
 	def print_info(self, info):
 		"""Print information line about built target."""
 		if not self.quiet and self.info_ena:
+			self.handle_action()
 			sys.stdout.write(BOLD + BLUE + str(info) + NORMAL + "\n")
 
 	def print_error(self, msg):
 		"""Print an error message."""
+		self.handle_action()
 		sys.stderr.write(BOLD + RED + "ERROR: " + str(msg) + NORMAL + "\n")
 	
 	def print_warning(self, msg):
 		"""Print a warning message."""
+		self.handle_action()
 		sys.stderr.write(BOLD + YELLOW + "WARNING: " + str(msg) + NORMAL + "\n")
 
 	def print_success(self, msg):
 		"""Print a success message."""
+		self.handle_action()
 		sys.stderr.write(BOLD + GREEN + "[100%] " + msg + str(NORMAL) + "\n")
 
 	def print_action(self, msg):
@@ -107,21 +120,28 @@ class Context:
 		if not self.quiet:
 			sys.stdout.write("%s ... " % msg)
 			sys.stdout.flush()
+			self.action = msg
+			self.flushed = False
+	
+	def print_action_final(self, msg):
+		if not self.quiet:
+			if self.flushed:
+				sys.stdout.write("%s ... " % self.action)				
+			sys.stdout.write(msg)
+			sys.stdout.write("\n");
+			self.action = None
+			self.flushed = False
 	
 	def print_action_success(self, msg = ""):
 		"""End an action with success."""
-		if not self.quiet:
-			if msg:
-				sys.stdout.write("(%s) " % msg)
-			sys.stdout.write(GREEN + BOLD + "[0K]" + NORMAL)
-			sys.stdout.write("\n");
+		if msg:
+			msg = "(%s) " % msg
+		print_action_final(msg + GREEN + BOLD + "[OK]" + NORMAL)
 
 	def print_action_failure(self, msg = ""):
 		"""End an action with failure."""
-		if not self.quiet:
-			if msg:
-				sys.stdout.write("(%s) " % msg)
-			sys.stdout.write(RED + BOLD + "[FAILED]" + NORMAL)
-			sys.stdout.write("\n");
+		if msg:
+			msg = "(%s) " % msg
+		print_action_final(msg + RED + BOLD + "[FAILED]" + NORMAL)
 
 DEF = Context()

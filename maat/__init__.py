@@ -103,6 +103,7 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser.add_argument('-V', '--version', action="store_true", default=False, help="display the current version")
 	parser.add_argument('-p', '--print-data-base', action="store_true", default=False, help="print the recipe database")
 	parser.add_argument('-n', '--dry-run', '--just-print',  action="store_true", default=False, help="display the commands but does not execute them")
+	parser.add_argument('-t', '--time', action="store_true", default=False, help="display processing time")
 
 	# get arguments
 	args = parser.parse_args()
@@ -117,6 +118,7 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 	do_list = args.list
 	do_print_db = args.print_data_base
 	do_dry = args.dry_run
+	do_time = args.time
 
 	# parse free arguments
 	for a in args.free:
@@ -145,6 +147,8 @@ def make_todo(todo, ctx):
 	cstat = 0
 	tstat = len(todo)	
 	for f in todo:
+		if do_time:
+			start_time = common.time()
 		
 		# ensure the target directory exists
 		for r in f.recipe.ress:
@@ -160,11 +164,18 @@ def make_todo(todo, ctx):
 			push_env(f.recipe.env)
 			common.Path(f.recipe.cwd).set_cur()
 		if not f.is_hidden:
-			ctx.print_info("[%3d%%] Making %s" % (cstat * 100 / tstat, f.path.relative_to(env.top.path)))
+			if do_time:
+				ctx.print_action(io.BLUE + io.BOLD + ("[%3d%%] Making %s" % (cstat * 100 / tstat, f.path.relative_to(env.top.path))) + io.NORMAL)
+			else:
+				ctx.print_info("[%3d%%] Making %s" % (cstat * 100 / tstat, f.path.relative_to(env.top.path)))
 		if not do_dry:
 			f.recipe.action(ctx)
 			pop_env()
 			sign.record(f)
+		if not f.is_hidden:
+			if do_time:
+				duration = common.time() - start_time
+				ctx.print_action_final("(%s)" % common.format_duration(duration))
 		cstat = cstat + 1
 
 
@@ -212,8 +223,13 @@ def make_work(ctx = io.Context()):
 				targets = []
 				for a in todo:
 					recipe.get_file(a).collect_updates(targets)
+				start_time = common.time()
 				make_todo(targets, ctx)
-				ctx.print_success("all is fine!");
+				duration = common.time() - start_time
+				if do_time:
+					ctx.print_success("all is fine (%s)!" % common.format_duration(duration));
+				else:
+					ctx.print_success("all is fine!");
 				if not do_dry:
 					sign.save(ctx)
 			except common.MaatError, e:

@@ -18,6 +18,7 @@
 
 import fnmatch
 import os
+import time as pytime
 
 import io
 
@@ -284,4 +285,15 @@ class OrFilter(Filter):
 		return "(" + " or ".join([str(f) for f in self.filters]) + ")"
 
 
+def format_duration(d):
+	"""Format a duration (in s) for user display."""
+	if d >= 1:
+		return "%10.2fs" % d
+	else:
+		return "%6.2fms" % (d * 1000)
+
+
+def time():
+	"""Get the current time (in s)."""
+	return pytime.time()
 
