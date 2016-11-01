@@ -123,11 +123,15 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 	do_config = False
 	do_list = args.list
 	do_print_db = args.print_data_base
-	do_dry = args.dry_run
 	do_time = args.time
 	do_quiet = args.quiet
 	do_always = args.always_make
-	do_question = args.question
+	if args.dry_run:
+		builder = build.DryBuilder
+	elif args.question:
+		builder = build.QuestBuilder
+	else:
+		builder = build.SeqBuilder
 
 	# parse free arguments
 	for a in args.free:
@@ -231,8 +235,6 @@ def make_work(ctx = io.Context()):
 				global todo
 				if not todo:
 					todo = ["all"]
-				if do_time:
-					start_time = common.time()
 				sign.load(ctx)
 				for a in todo:
 					targets = []
@@ -240,14 +242,7 @@ def make_work(ctx = io.Context()):
 						recipe.get_file(a).collect_all(targets)
 					else:
 						recipe.get_file(a).collect_updates(targets)
-					if do_question:
-						if any(not t.is_phony and not t.is_meta for t in targets):
-							sys.exit(1)
-					else:
-						if do_dry:
-							build.DryBuilder(ctx, targets).build()
-						else:
-							build.SeqBuilder(ctx, targets).build()
+					builder(ctx, targets).build()
 				sys.exit(0)
 			except common.MaatError, e:
 				ctx.print_error(e)

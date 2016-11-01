@@ -20,6 +20,7 @@ Several build methods exist: DryBuilder, QuestBuilder, SeqBuilder
 and ParBuilder."""
 
 import os
+import sys
 
 import common
 import maat
@@ -129,6 +130,18 @@ class DryBuilder(Builder):
 				for cmd in cmds:
 					self.ctx.print_command(cmd)
 				job.pop_env()
+
+
+class QuestBuilder(Builder):
+	"""Builder that don't do anything except test if an udpate is required."""
+	
+	def __init__(self, ctx, targets):
+		Builder.__init__(self, ctx, targets)
+	
+	def build(self):
+		for job in self.todo:
+			if not job.target.is_phony:
+				sys.exit(1)
 
 
 class SeqBuilder(Builder):
