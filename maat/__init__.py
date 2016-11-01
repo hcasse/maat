@@ -2,6 +2,7 @@
 #	Copyright (C) 2016 H. Casse <hugues.casse@laposte.net>
 #
 #	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GtNU General Public License as published by
 #	it under the terms of the GNU General Public License as published by
 #	the Free Software Foundation, either version 3 of the License, or
 #	(at your option) any later version.
@@ -17,6 +18,7 @@
 """Main module of Maat, a python-based build system."""
 import action
 import argparse
+import build
 import common
 import config
 import datetime
@@ -54,7 +56,7 @@ class FunDelegate(Delegate):
 
 
 # global variables
-version = "0.4"
+version = "0.5"
 topdir = env.topdir	# top directory
 todo = []			# goals to do
 verbose = False		# verbose mode
@@ -70,6 +72,7 @@ curenv = None			# current environment
 """Current environment."""
 curdir = None			# current directory
 """Current directory."""
+
 envstack = []
 
 def set_env(e):
@@ -241,16 +244,10 @@ def make_work(ctx = io.Context()):
 						if any(not t.is_phony and not t.is_meta for t in targets):
 							sys.exit(1)
 					else:
-						make_todo(targets, ctx)
-				if do_question:
-					sys.exit(0)
-				if do_time:
-					duration = common.time() - start_time
-					ctx.print_success("all is fine (%s)!" % common.format_duration(duration));
-				else:
-					ctx.print_success("all is fine!");
-				if not do_dry:
-					sign.save(ctx)
+						if do_dry:
+							build.DryBuilder(ctx, targets).build()
+						else:
+							build.SeqBuilder(ctx, targets).build()
 				sys.exit(0)
 			except common.MaatError, e:
 				ctx.print_error(e)

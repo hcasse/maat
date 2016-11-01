@@ -115,8 +115,8 @@ class Linker(action.Action):
 	def execute(self, ctx):
 		action.invoke(self.command(), ctx)
 			
-	def display(self, out):
-		out.write("\t%s\n" % action.make_line(self.command()))
+	def commands(self, cmds):
+		cmds.append("%s" % action.make_line(self.command()))
 	
 def link_lib(ress, deps):
 	return [ress[0].AR, "rcs", ress[0], deps]

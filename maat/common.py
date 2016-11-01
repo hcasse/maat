@@ -18,12 +18,15 @@
 
 import fnmatch
 import os
+import sys
 import time as pytime
 
 import io
+import sign
 
 script_failed = False
 topenv = None
+root = sys.modules['__main__']
 
 # Error Management
 
@@ -296,3 +299,4 @@ def format_duration(d):
 def time():
 	"""Get the current time (in s)."""
 	return pytime.time()
+

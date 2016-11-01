@@ -79,10 +79,17 @@ class Action:
 		"""Perform the action. If an action fails, raise env.MaatError exception.
 		It takes as parameter the IO context of execution."""
 		pass
+		
+	def commands(self, cmds):
+		"""Store in cmds the commands composing the action."""
+		pass
 	
 	def display(self, out):
 		"""Display an action (one tab + one line)."""
-		pass
+		cmds = []
+		self.commands(cmds)
+		for cmd in cmds:
+			out.write("\t%s\n" % cmd)
 	
 	def signature(self):
 		"""compute the signature of the function as a string."""
@@ -113,8 +120,8 @@ class ShellAction(Action):
 		if self.quiet:
 			ctx.command_ena = save
 
-	def display(self, out):
-		out.write("\t%s\n" % self.cmd)
+	def commands(self, cmds):
+		cmds.append(self.cmd)
 
 	def clone(self):
 		return ShellAction(self.cmd, self.quiet)
@@ -134,9 +141,9 @@ class GroupAction(Action):
 		for action in self.actions:
 			action.execute(ctx)
 
-	def display(self, out):
+	def commands(self, cmds):
 		for a in self.actions:
-			a.display(out)
+			a.commands(cmds)
 
 	def clone(self):
 		return GroupAction([a.clone() for a in self.actions])		
@@ -160,8 +167,8 @@ class FunAction(Action):
 	def execute(self, ctx):
 		self.fun(self.recipe.ress, self.recipe.deps, ctx)
 
-	def display(self, out):
-		out.write("\tfunction\n")
+	def commands(self, cmds):
+		cmds.append("<function>")
 
 	def clone(self):
 		return FunAction(self.fun)
@@ -227,8 +234,8 @@ class Grep(Action):
 		if self.err:
 			ctx.err = old_err
 
-	def display(self, ress, deps, out):
-		out.write("\t%s | grep %s" % (self.cmd, self.exp))
+	def commands(self, cmds):
+		cmds.append("%s | grep %s" % (self.cmd, self.exp))
 
 	def clone(self):
 		return Grep(self.exp, self.cmd, self.out, self.err)
@@ -255,9 +262,9 @@ class Remove(Action):
 				if not self.ignore_error:
 					common.error(str(e))
 
-	def display(self, out):
+	def commands(self, cmds):
 		for p in self.paths:
-			out.write("\tremove %s\n" % p)
+			cmds.append("remove %s" % p)
 
 	def clone(self):
 		return Remove(self.paths, ignore_error = self.ignore_error)
@@ -284,9 +291,9 @@ class Move(Action):
 		except OSError, e:
 			common.error(str(e))
 		
-	def display(self, out):
+	def commands(self, cmds):
 		for p in self.paths:
-			out.write("\tmove %s to %s\n" % (p, self.target))
+			cmds.append("move %s to %s" % (p, self.target))
 
 	def clone(self):
 		return Move(self.paths, self.target)
@@ -308,8 +315,8 @@ class Invoke(Action):
 		except OSError, e:
 			common.error(str(e))
 		
-	def display(self, out):
-		out.write("\t%s\n" % make_line(self.cmd))
+	def commands(self, cmds):
+		cmds.append(make_line(self.cmd))
 
 	def clone(self):
 		return Invoke(self.cmd)
@@ -328,7 +335,7 @@ class Hidden(Action):
 	def execute(self, ctx):
 		self.action.execute(ctx)
 	
-	def display(self, out):
+	def commands(self, cmds):
 		pass
 	
 	def clone(self):
@@ -350,8 +357,8 @@ class Print(Action):
 	def clone(self):
 		return Print(self.msg)
 
-	def display(self, out):
-		out.write("\tprint(%s)\n" % self.msg)
+	def commands(self, cmds):
+		cmds.append("print(%s)" % self.msg)
 	
 	def signature(self):
 		return "print(%s)" % self.msg
@@ -367,8 +374,8 @@ class MakeDir(Action):
 	def execute(self, ctx):
 		lowlevel.makedir(self.path)
 	
-	def display(self, out):
-		out.write("\tmakedir %s\n" % self.path)
+	def commands(self, cmds):
+		cmds.append("makedir %s" % self.path)
 	
 	def signature(self):
 		return "makedir(%s)" % self.path

@@ -34,10 +34,12 @@ class File(env.MapEnv):
 	* sticky files are files that must remains after build,
 	* phony files does not represent real files and their action are
 	  always performed,
-	* meta files are goals that are executed only if one of their
-	  dependency is updated,
+	* meta files are targets that are executed only if one of their
+	  dependency is updated (but are also phony),
 	* hidden means that the execution is not displayed,
-	* target are files that are targets."""
+	* target are files that are targets,
+	* goal represents phony goals displayed as entries to the user
+	  (goals are also phony)."""
 	
 	def __init__(self, path):
 		env.MapEnv.__init__(self, path.get_file() , env.cenv.path, env.cenv)
@@ -50,6 +52,7 @@ class File(env.MapEnv):
 		self.is_hidden = False
 		self.is_target = False
 		self.actual_path = None
+		self.is_goal = False
 
 	def set_phony(self):
 		"""Mark the file as phony, i.e. does not match a real file."""
@@ -58,6 +61,7 @@ class File(env.MapEnv):
 	def set_meta(self):
 		"""Mark a file as meta."""
 		self.is_meta = True
+		self.is_phony = True
 
 	def set_target(self):
 		"""Mark a file as a target."""
@@ -225,6 +229,14 @@ class Recipe:
 		pass
 
 	def display_action(self, out):
+		"""Display the action of the receipe."""
+		cmds = []
+		self.commands(cmds)
+		for cmd in cmds:
+			out.write("\t%s\n" % cmd)
+	
+	def commands(self, cmds):
+		"""Get commands to build the recipe."""
 		pass
 
 	def display(self, out):
@@ -248,8 +260,8 @@ class FunRecipe(Recipe):
 		Recipe.__init__(self, ress, deps)
 		self.fun = fun
 
-	def display_action(self, out):
-		out.write("\t<internal>\n")
+	def commands(self, cmds):
+		cmds.append("<internal>")
 
 	def action(self, ctx):
 		self.fun(self.ress, self.deps, ctx)
@@ -332,8 +344,8 @@ class ActionRecipe(Recipe):
 	def action(self, ctx):
 		self.get_action().execute(ctx)
 	
-	def display_action(self, out):
-		self.get_action().display(out)
+	def commands(self, cmds):
+		self.get_action().commands(cmds)
 
 	def signature(self):
 		return self.get_action().signature()
