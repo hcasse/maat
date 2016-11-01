@@ -20,6 +20,7 @@
 
 ===== Engine =====
 
+[ ] add building modes
 [ ] provide commands for rule as writing shell commands
 [ ] support invocation from non-top make.py
 [ ] add command to support file generation from variable content

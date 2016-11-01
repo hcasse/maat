@@ -104,7 +104,7 @@ class File(env.MapEnv):
 	
 	def time(self):
 		"""Get the last update time of the file."""
-		if self.is_phony:
+		if self.is_goal:
 			return 0
 		elif self.is_meta:
 			if self.recipe:
@@ -129,17 +129,17 @@ class File(env.MapEnv):
 		* if it doesn't exist and it is not phony
 		* if the signature has changed,
 		* if the dependencies are younger."""
-		if self.is_phony:
+		if self.is_goal:
 			#print "DEBUG: %s updated because it is phony!" % self
 			return True
-		elif not self.is_meta and not self.actual().exists():
+		elif not self.is_phony and not self.actual().exists():
 			#print "DEBUG: %s updated because it doesn't exist!" % self
-			return True
-		elif not sign.test(self):
-			#print "DEBUG: %s updated because signature changed!" % self
 			return True
 		elif not self.recipe:
 			return False
+		elif not sign.test(self):
+			#print "DEBUG: %s updated because signature changed!" % self
+			return True
 		else:
 			for d in self.recipe.deps:
 				if d.needs_update() or self.younger_than(d):
