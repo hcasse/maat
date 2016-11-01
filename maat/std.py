@@ -58,36 +58,36 @@ def install_default_goals():
 	# install all
 	path = env.cenv.path / "all"
 	if not recipe.file_db.has_key(path):
-		maat.phony("all", ALL)
-		maat.file("all")["DESCRIPTION"] = "build all"
+		g = maat.goal("all", ALL)
+		g.DESCRIPTION = "build all"
 
 	# install clean
 	path = env.cenv.path / "clean"
 	if not recipe.file_db.has_key(path):
-		maat.phony("clean", [], maat.remove(CLEAN, ignore_error = True))
-		maat.file("clean")["DESCRIPTION"] = "remove produced files"
+		g = maat.goal("clean", [], maat.remove(CLEAN, ignore_error = True))
+		g.DESCRIPTION = "remove produced files"
 
 	# install distclean
 	path = env.cenv.path / "distclean"
 	if not recipe.file_db.has_key(path):
-		maat.phony("distclean", ["clean"], maat.remove(DISTCLEAN, ignore_error = True))
-		maat.file("distclean")["DESCRIPTION"] = "remove produced files and configuration files"
+		g = maat.goal("distclean", ["clean"], maat.remove(DISTCLEAN, ignore_error = True))
+		g.DESCRIPTION = "remove produced files and configuration files"
 
 	# install config
 	path = env.cenv.path / "config"
 	if not recipe.file_db.has_key(path):
-		maat.phony("config", [], action.FunAction(config.make))
-		maat.file("config")["DESCRIPTION"] = "build configuration"
+		g = maat.goal("config", [], action.FunAction(config.make))
+		g.DESCRIPTION = "build configuration"
 
 	# install install
 	if not recipe.file_db.has_key(env.top.path / "install"):
-		maat.phony("install", INSTALL)
-		maat.file("install")["DESCRIPTION"] = "perform installation of the sofware"
+		g = maat.goal("install", INSTALL)
+		g.DESCRIPTION = "perform installation of the sofware"
 	
 	# dist install
 	if not recipe.file_db.has_key(env.top.path / "dist"):
 		recipe.hidden("setup-dist", [], install.SetupDist())
-		maat.phony("dist", ["setup-dist", "install"])
-		maat.file("dist")["DESCRIPTION"] = "build a binary distribution"
+		g = maat.goal("dist", ["setup-dist", "install"])
+		g.DESCRIPTION = "build a binary distribution"
 
 maat.post_inits.append(maat.FunDelegate(install_default_goals))

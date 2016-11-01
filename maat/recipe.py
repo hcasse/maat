@@ -75,6 +75,11 @@ class File(env.MapEnv):
 		"""Mark a file as sticky, that is, a final target (not intermediate)."""
 		self.sticky = True
 	
+	def set_goal(self):
+		"""Mark the file as a goal."""
+		self.is_goal = True
+		self.is_phony = True
+	
 	def actual(self):
 		"""Get the actual path of the file. For target file, this path
 		is relative to BPATH variable."""
@@ -430,10 +435,10 @@ def fix(path):
 
 def rule(ress, deps, *actions):
 	"""Build a rule with actions."""
-	ActionRecipe(ress, deps, make_actions(actions))
+	return ActionRecipe(ress, deps, make_actions(actions)).ress[0]
 
 
-def phony(goal, deps, actions = action.Action()):
+def phony(ress, deps, *actions):
 	"""Build a goal with the following dependencies that does not
 	match a real file."""
 	path = common.Path(env.cenv.path) / goal
@@ -442,25 +447,31 @@ def phony(goal, deps, actions = action.Action()):
 		common.script_error("a goal already named '%s' already exist!" % goal)
 	else:
 		file.set_phony()
-		ActionRecipe(goal, deps, actions)
+		return ActionRecipe(ress, deps, *actions).ress[0]
 
 
-def hidden(name, deps, *actions):
+def hidden(ress, deps, *actions):
 	"""Build an hidden and phony rule, that is, a rule without action
 	grouping several other rules in its dependencies.
 	The result is the recipe itself."""
-	a = ActionRecipe(name, deps, *actions)
-	a.ress[0].set_phony()
-	a.ress[0].set_hidden()
+	a = phony(ress, deps, *actions)
+	a.set_hidden()
 	return a
 
 
-def meta(name, deps, *actions):
-	"""Build an hidden and meta rule, that is, a rule 
+def meta(ress, deps, *actions):
+	"""Build a meta rule, that is, a rule 
 	grouping several other rules in its dependencies."""
-	a = ActionRecipe(name, deps, *actions)
-	a.ress[0].set_meta()
-	#a.ress[0].set_hidden()
+	a = phony(ress, deps, *actions)
+	a.set_meta()
+	return a
+
+
+def goal(ress, deps, *actions):
+	"""Build a goal, that is a phony target but displayed to the user
+	when using -l option."""
+	a = phony(ress, deps, *actions)
+	a.set_goal()
 	return a
 
 

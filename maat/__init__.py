@@ -367,6 +367,10 @@ def rule(ress, deps, *actions):
 	"""Build a custom rule with actions."""
 	return action.rule(ress, deps, actions)
 
+def goal(ress, deps, *actions):
+	"""Build a goal rule with actions."""
+	return recipe.goal(ress, deps, *actions)
+
 def shell(cmd):
 	"""Build a shell action."""
 	return action.ShellAction(cmd)
