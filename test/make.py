@@ -2,6 +2,7 @@
 import maat.c as c
 from maat import *
 from maat import install
+from maat import std
 
 CFLAGS = "-g3"
 
@@ -19,3 +20,6 @@ install.data("README")
 install.data("doc")
 
 phony("show", [], show("Hello, World!"))
+
+f = makefile("COUCOU", "coucou")
+std.ALL.append(f)

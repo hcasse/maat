@@ -79,6 +79,9 @@ class Path:
 	def __str__(self):
 		return self.path
 	
+	def is_empty(self):
+		return self.path == ""
+	
 	def exists(self):
 		"""Test if the file matching the path exists."""
 		return os.path.exists(self.path)

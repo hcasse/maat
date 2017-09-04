@@ -507,6 +507,10 @@ my_goal.DESCRIPTION = "description"
 </code>
 
 
+There are different ways to generate files that are built as rules:
+  * ''makefile''(//path//, //content//) -- generate the file correspoding to the //path//
+and write inside the given //content//.
+
 
 ===== Actions =====
 

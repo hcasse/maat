@@ -331,7 +331,7 @@ def phony(goal, deps, actions = action.NULL):
 
 def rule(ress, deps, *actions):
 	"""Build a custom rule with actions."""
-	return action.rule(ress, deps, actions)
+	return recipe.rule(ress, deps, actions)
 
 def goal(ress, deps, *actions):
 	"""Build a goal rule with actions."""
@@ -356,6 +356,11 @@ def gen_command(res, dep, fun):
 	The passed function must take as parameter the recipe this action is launched for.
 	This recipe provides details of the implemented rule."""
 	recipe.ActionGen(res, dep, lambda r, d: action.Invoke(fun(r, d)))
+
+def makefile(path, content):
+	"""Build a rule that make a file with the given content (possibly creating
+	the required directories)."""
+	return rule(path, [], action.MakeFile(path, content))
 
 
 ######## file system functions ##########
@@ -451,4 +456,3 @@ def makedir(path):
 	"""Build a directory."""
 	return action.Makedir(path)
 
-	

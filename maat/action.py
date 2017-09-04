@@ -380,4 +380,26 @@ class MakeDir(Action):
 	def signature(self):
 		return "makedir(%s)" % self.path
 	
+
+class MakeFile(Action):
+	"""Build a file with the given content."""
+	path = None
+	content = None
 	
+	def __init__(self, path, content):
+		self.path = common.Path(path)
+		self.content = str(content)
+	
+	def execute(self, ctx):
+		ppath = self.path.parent()
+		if not ppath.is_empty():
+			lowlevel.makedir()
+		f = open(str(self.path), "w")
+		f.write(self.content)
+		f.close()
+
+	def commands(self, cmds):
+		cmds.append("makefile(%s, %s)" % (self.path, self.content))
+	
+	def signature(self):
+		return "makefile(%s, %s)" % (self.path, self.content)

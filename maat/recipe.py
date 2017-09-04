@@ -435,7 +435,7 @@ def fix(path):
 
 def rule(ress, deps, *actions):
 	"""Build a rule with actions."""
-	return ActionRecipe(ress, deps, make_actions(actions)).ress[0]
+	return ActionRecipe(ress, deps, action.make_actions(actions)).ress[0]
 
 
 def phony(goal, deps, *actions):

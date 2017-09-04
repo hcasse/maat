@@ -39,8 +39,8 @@
 ===== Actions =====
 
 [ ] add mode (error, warning, fatal, ...) to show command.
-[ ] add makefile() command to create a file containing the given content.
 [ ] supports lambdas as action
+[X] add makefile() command to create a file containing the given content.
 
 
 ===== Documentation =====
