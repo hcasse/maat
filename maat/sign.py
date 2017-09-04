@@ -103,6 +103,8 @@ def test(file):
 
 def record(file):
 	"""Record the signature for making the given file."""
+	if file.recipe == None:
+		return
 	k = str(file)
 	s = file.recipe.signature()
 	try:

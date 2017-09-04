@@ -16,7 +16,11 @@
 
 """Implements command line services of ElfMake."""
 
+import common
+import env
 import io
+import lowlevel
+import os.path
 import recipe
 import sys
 
@@ -24,14 +28,15 @@ def list_goals(ctx = io.Context()):
 	"""List goals."""
 
 	l = [f for f in recipe.file_db.values() if f.is_goal and not f.is_hidden]
-	l.sort()
-	ll = max([len(str(f)) for f in l])
-	for f in l:
-		desc = f.get_here("DESCRIPTION")
-		if desc:
-			ctx.print_info("%s %s" % (str(f) + " " * (ll - len(f.name)), desc))
-		else:
-			ctx.print_info(str(f))
+	if l:
+		l.sort()
+		ll = max([len(str(f)) for f in l])
+		for f in l:
+			desc = f.get_here("DESCRIPTION")
+			if desc:
+				ctx.print_info("%s %s" % (str(f) + " " * (ll - len(f.name)), desc))
+			else:
+				ctx.print_info(str(f))
 
 
 def print_db():
@@ -44,4 +49,31 @@ def print_db():
 			done[r] = True
 			r.display(sys.stdout)
 
+
+def embed():
+	"""Embed the required modules in the current project."""
 	
+	# select the libraries
+	tm = None
+	ms = []
+	for m in sys.modules.values():
+		try:
+			if m <> None:
+				if m.__name__ == "maat":
+					tm = m
+					ms.append(m)
+				elif m.__name__.startswith("maat."):
+					ms.append(m) 
+		except AttributeError:
+			pass
+
+	# get maat directory
+	mpath = common.Path(env.top.path) / "maat"
+
+	# copy the modules
+	for m in ms:
+		p = m.__file__
+		if p.endswith(".pyc"):
+			p = p[:-1]
+		lowlevel.copy(common.Path(p), mpath)
+

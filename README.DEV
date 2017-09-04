@@ -3,12 +3,12 @@
 
 ===== Command =====
 
-[ ] add option to embed elfmake in the current projet (making easier broadcasting of ElfMake)
 [ ] add option to call configuration program and get back result in variables
 [ ] add special file names to design shortly source and targets
 [ ] add option to dump selected variables
 [ ] add -j, --jobs N for parallel compilation
 [ ] add -b, --brief for brief output (work bar + currently processed file)
+[X] add option to embed Maat in the current projet (making easier broadcasting of Maat)
 [X] add -q, --question with return code equal to 0 if not update is needed
 [X] add -B, --always-make to (re)build all!
 [X] add -s, --silent, --quiet for not output
@@ -94,6 +94,4 @@
 ===== Configuration =====
 
 [X] Add dependency system between configurations.
- 
-
 

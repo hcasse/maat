@@ -110,6 +110,7 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	parser.add_argument('-s', '--quiet', '--silent', action="store_true", default=False, help="work in quiet mode (doesn't display anything)")
 	parser.add_argument('-B', '--always-make', action="store_true", default=False, help="rebuild all without checking for updates")
 	parser.add_argument('-q', '--question', action="store_true", default=False, help="test if something has to be updated (result in return code)")
+	parser.add_argument('-e', '--embed', action="store_true", default=False, help="embed Maat in the current directory (making the project easier to compile)")
 
 	# get arguments
 	args = parser.parse_args()
@@ -126,6 +127,7 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 	do_time = args.time
 	do_quiet = args.quiet
 	do_always = args.always_make
+	do_embed = args.embed
 	if args.dry_run:
 		builder = build.DryBuilder
 	elif args.question:
@@ -154,44 +156,6 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" %
 	env.root.PLATFORM = "%s-%s" % (env.root.PLATFORM, env.root.MACHINE)
 
 
-def make_todo(todo, ctx):
-	if do_dry:
-		ctx.print_warning("dry run!")
-	cstat = 0
-	tstat = len(todo)	
-	for f in todo:
-		if do_time:
-			start_time = common.time()
-		
-		# ensure the target directory exists
-		for r in f.recipe.ress:
-			ppath = r.actual().parent()
-			if not ppath.exists():
-				try:
-					os.makedirs(str(ppath))
-				except error, e:
-					common.error(env.ElfError(str(e)))
-		
-		# perform the recipe action
-		if not do_dry:
-			push_env(f.recipe.env)
-			common.Path(f.recipe.cwd).set_cur()
-		if not f.is_hidden:
-			if do_time:
-				ctx.print_action(io.BLUE + io.BOLD + ("[%3d%%] Making %s" % (cstat * 100 / tstat, f.path.relative_to(env.top.path))) + io.NORMAL)
-			else:
-				ctx.print_info("[%3d%%] Making %s" % (cstat * 100 / tstat, f.path.relative_to(env.top.path)))
-		if not do_dry:
-			f.recipe.action(ctx)
-			pop_env()
-			sign.record(f)
-		if not f.is_hidden:
-			if do_time:
-				duration = common.time() - start_time
-				ctx.print_action_final("(%s)" % common.format_duration(duration))
-		cstat = cstat + 1
-
-
 def make(ctx = io.Context()):
 	"""Do nothing: only kept for backward compatibility."""
 	pass
@@ -216,8 +180,12 @@ def make_work(ctx = io.Context()):
 	for post in post_inits:
 		post.perform(ctx)
 	
+	# embed action
+	if do_embed:
+		services.embed()
+	
 	# configuration action
-	if do_config:
+	elif do_config:
 		config.make()
 	
 	# build action
@@ -242,7 +210,10 @@ def make_work(ctx = io.Context()):
 						recipe.get_file(a).collect_all(targets)
 					else:
 						recipe.get_file(a).collect_updates(targets)
-					builder(ctx, targets).build()
+					b = builder(ctx, targets)
+					if do_time:
+						b.show_time = True
+					b.build()
 				sys.exit(0)
 			except common.MaatError, e:
 				ctx.print_error(e)

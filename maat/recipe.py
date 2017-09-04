@@ -438,16 +438,16 @@ def rule(ress, deps, *actions):
 	return ActionRecipe(ress, deps, make_actions(actions)).ress[0]
 
 
-def phony(ress, deps, *actions):
+def phony(goal, deps, *actions):
 	"""Build a goal with the following dependencies that does not
 	match a real file."""
 	path = common.Path(env.cenv.path) / goal
 	file = get_file(str(path))
 	if file.recipe:
-		common.script_error("a goal already named '%s' already exist!" % goal)
+		common.script_error("a goal named '%s' already exist!" % goal)
 	else:
 		file.set_phony()
-		return ActionRecipe(ress, deps, *actions).ress[0]
+		return ActionRecipe(goal, deps, *actions).ress[0]
 
 
 def hidden(ress, deps, *actions):

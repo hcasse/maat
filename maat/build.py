@@ -23,6 +23,7 @@ import os
 import sys
 
 import common
+import io
 import maat
 import sign
 
@@ -39,23 +40,26 @@ class Job:
 
 	def push_env(self):
 		"""Install the environment to build the target."""
-		maat.push_env(self.target.recipe.env)
-		common.Path(self.target.recipe.cwd).set_cur()
+		if self.target.recipe:
+			maat.push_env(self.target.recipe.env)
+			common.Path(self.target.recipe.cwd).set_cur()
 
 	def pop_env(self):
 		"""Uninstall the environment to build the target."""
-		maat.pop_env()
+		if self.target.recipe:
+			maat.pop_env()
 
 	def prepare(self):
 		"""Prepare the target to run the action."""
 		self.start_time = common.time()
-		for r in self.target.recipe.ress:
-			ppath = r.actual().parent()
-			if not ppath.exists():
-				try:
-					os.makedirs(str(ppath))
-				except error, e:
-					common.error(env.ElfError(str(e)))
+		if self.target.recipe <> None:
+			for r in self.target.recipe.ress:
+				ppath = r.actual().parent()
+				if not ppath.exists():
+					try:
+						os.makedirs(str(ppath))
+					except error, e:
+						common.error(env.ElfError(str(e)))
 		self.push_env()
 
 	def finalize(self):
@@ -67,7 +71,8 @@ class Job:
 	def build(self):
 		"""Build the given target."""
 		self.prepare()
-		self.target.recipe.action(self.builder.ctx)
+		if self.target.recipe:
+			self.target.recipe.action(self.builder.ctx)
 		self.finalize()
 
 
@@ -91,7 +96,7 @@ class Builder:
 		"""Return next job to do or None."""
 		for j in self.todo:
 			if  j not in self.current \
-			and all(d not in self.todo for d in j.target.recipe.deps):
+			and (j.target.recipe == None or all(d not in self.todo for d in j.target.recipe.deps)):
 				self.start(j)
 				return j
 		return None

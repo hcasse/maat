@@ -466,10 +466,8 @@ Resources to examine files includes:
 
 The following commands may be used to manage goals and rules:
   * ''phony''(//goal//, //deps//, //actions//) -- build a new phony (not matching an actual file).
+  * ''goal''(//goal//, //deps//, //actions//) -- build a phony rule that will be displayed with ''-l'' option.
   * ''rule''(//ress//, //deps//, //actions//) -- build a specific rule for a particular file.
-
-The following variables are used:
-  * ''DESCRIPTION'' put on a goal file, provide description for the goal for option "-l".
 
 Basically, writing a rule is as simple as writing:
 <code python>
@@ -499,6 +497,15 @@ to files as below:
 <code python>
 phony("autodoc", [], "doxygen")
 </code>
+
+The ''goal'' rules are phony rules displayed with option ''-l''. You can
+assign a description when the rule is displayed using ''DESCRIPTION''
+variable as below:
+<code python>
+my_goal = goal("my_goal", sources, actions)
+my_goal.DESCRIPTION = "description"
+</code>
+
 
 
 ===== Actions =====
@@ -537,11 +544,16 @@ To use it:
 import maat.std as std
 </code>
 
+===== Standard goals =====
+
 The standard module provides the following  goals:
   * ''all'' -- compiles all,
   * ''clean'' -- clean all produced files,
   * ''distclean'' -- clean all files including configuration and .pyc files,
   * ''config'' -- launch the configuration lookup.
+
+
+===== Standard Variables =====
 
 These goals are using the following variables:
   * ''ALL'' -- list of targets to build,
@@ -550,6 +562,19 @@ These goals are using the following variables:
   * ''INSTALL_PROGRAMS'' -- list of programs to install,
   * ''INSTALL_LIBS'' -- list of libraries to install,
   * ''INSTALL_DATA'' -- list of data files to install.
+
+In order to append some goal or some file to one of these variables,
+you have to write (here for ''ALL''):
+<code python>
+std.ALL.append(goal)
+</code>
+
+For example, if you have a special rule to build your documentation,
+you can write:
+<code python>
+doc = goal("doc", [source files], actions)
+std.ALL.append(doc)
+</code>
 
 
 
@@ -739,4 +764,45 @@ libraries and using the right linking flags.**
 
 
 
+====== Command Line Options ======
+
+@(MAAT) comes with comprehensive set of command line options that let
+the user precisely tuning the behaviour of the builder.
+ 
+===== List of options =====
+
+^ short ^ long              ^ description                                                                 ^
+| -h    | --help            | Show this help message and exit                                             |
+| -v    |--verbose          | Verbose mode: useful to debug a script.                                     |
+| -l    | --list            | Display available public goals.                                             |
+| -V    | --version         | Display the current version.                                                |
+| -p    | --print-data-base | Print the recipe database.                                                  |
+| -n    | --dry-run         | Display the commands but does not execute them.                             |
+|       | --just-print      |                                                                             |
+| -t    | --time            | Display processing time.                                                    |
+| -s    | --quiet           | Work in quiet mode (doesn't display anything).                              |
+|       | --silent          |                                                                             |
+| -B    | --always-make     | Rebuild all without checking for updates.                                   |
+| -q    | --question        | Test if something has to be updated (result in return code).                |
+| -e    | --embed           | Embed Maat in the current directory (making the project easier to compile). |
+
+
+===== Embedding @(MAAT) =====
+
+The option ''-e'' or ''--embed'' copies the required Python files to
+embed @(MAAT) in & directory named ''maat'' in the source directory
+of the current project. The option tries to minimize the number of
+needed file in order to get a @(MAAT) command usable for the project.
+
+This may be useful for two goals:
+
+* First, this avoids a user of the project sources to install @(MAAT).
+As @(MAAT) is very new software, this may be a burden to install only
+for one project. Additionally, as @(MAAT) is very light (about 3,000
+lines of code) and as Python is mostly available everywhere, embedding
+@(MAAT) is not so heavy but make easier the construction anywhere.
+
+* The second can concerne the version of @(MAAT): by embedding the
+sources of @(MAAT), it is sure that the scripts will be compatible
+with the @(MAAT) and the building is sure to succeed.
 
