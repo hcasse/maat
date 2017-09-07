@@ -83,6 +83,7 @@ config_list = []	# list of configuration modules
 updated = False
 in_config = False
 win_list = ['win32', 'win64', 'cygwin']
+comments = { }
 
 
 # convenient functions
@@ -133,12 +134,20 @@ def is_set(id):
 	except KeyError, e:
 		return False 
 
+def set(id, val):
+	"""Set the value to the given identifier in the configuration environment."""
+	env.conf.map[id] = val
+
 def set_if(id, fun):
 	"""Set a configuration item if it is not set. To obtain the value, call the function fun."""
 	if not is_set(id):
 		env.conf.set(id, fun())
 		global updated
 		updated = True
+
+def set_comment(id, com):
+	"""Set a comment associated with a configuration variable."""
+	comments[id] = com
 
 def make(ctx = io.Context()):
 	"""Build a configuration."""
@@ -177,7 +186,15 @@ def make(ctx = io.Context()):
 		f.write("# You're ALLOWED modifying this file to tune or complete your configuration\n")
 		for k in env.conf.map:
 			if not k.startswith("__"):
-				f.write("%s = %s\n" % (k, repr(env.conf.map[k])))
+				com = None
+				if comments.has_key(k):
+					com = comments[k]
+				if com <> None and "\n" in com:
+					f.write("# %s\n" % com.replace("\n", "\n# "))
+				f.write("%s = %s" % (k, repr(env.conf.map[k])))
+				if com <> None and "\n" not in com:
+					f.write("\t# %s" % com)
+				f.write("\n")
 		f.close()
 
 	# disable config mode

@@ -581,6 +581,25 @@ std.ALL.append(doc)
 </code>
 
 
+===== Build Mode =====
+
+The standard module provides limited support for build modes: a variable
+named ''BUILD_MODE'' is automatically generated in ''config.py'' with
+value ''Debug''. Any module, sensitive to building mode, can use it
+to change its own configuration. Basically, these module can support
+configuration variable which name is built using the value of
+''BUILD_MODE'' (see C/C++ module for a practical use of the concept).
+
+''BUILD_MODE'' virtually support any value providing the fact that
+other module can handle these special ''BUILD_MODE'' values. Basically,
+the standard module comes with two predefined values:
+  * ''Debug'' -- for debug mode compilation (meaning (a) the compiled files
+contains information to be debugged and (b) the compilation process is fast
+to enable fast testing).
+  * ''Release'' -- for release mode compilation to get compiled files
+ready for deployment (this means the compiled files are optimized and
+that the compilation process may be slower).
+
 
 ====== Install Module ======
 
@@ -625,7 +644,7 @@ must be a file filter and, if provided, remove the paths matching this filter
 from installation.
 
 
-====== C Module ======
+====== C/C++ Module ======
 
 The C module is dedicated to the compilation of C or C++ files. To use it:
 <code python>
@@ -766,6 +785,27 @@ flag ''-l'' to the built object.
 any  item (built from the script or provided by another way) with existing
 libraries and using the right linking flags.**
 
+===== Support for Build Mode =====
+
+This module support the build mode concept of the standard module.
+
+For object building (from C/C++ source to object), the compilation flags
+are additionally obtained from variable named ''CFLAGS_$(BUILD_MODE)''.
+The default configuration set this flags to ''-g3'' to enable debugging.
+
+For executable or dynamic library building, the ''LDFLAGS_$(BUILD_MODE)''
+may provide additional flags and the defaults value is empty.
+
+You can customize the flags depending on the mode using the variables
+(found in ''config.py''):
+  * ''CFLAGS_Debug''
+  * ''CFLAGS_Release''
+  * ''LDFLAGS_Debug''
+  * ''LDFLAGS_Release''
+
+Additionally, you can define your own ''BUILD_MODE'' and, if the corresponding
+''CFLAGS'' and ''LDFLAGS'' variable exist, they will be used in
+compilation and linkage implemented in this module.
 
 
 ====== Command Line Options ======
@@ -809,4 +849,5 @@ lines of code) and as Python is mostly available everywhere, embedding
 * The second can concerne the version of @(MAAT): by embedding the
 sources of @(MAAT), it is sure that the scripts will be compatible
 with the @(MAAT) and the building is sure to succeed.
+
 

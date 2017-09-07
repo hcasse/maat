@@ -30,6 +30,7 @@ In addition, it is using the following variables from the current environment:
   - INSTALLDIR -- installation directory (default to /usr).
   - PROJECT -- project name.
   - VERSION -- project version.
+  - BUILD_MODE -- build mode (usual modes are Debug or Release, default Debug)
 """
 
 import maat
@@ -89,5 +90,9 @@ def install_default_goals():
 		recipe.hidden("setup-dist", [], install.SetupDist())
 		g = maat.goal("dist", ["setup-dist", "install"])
 		g.DESCRIPTION = "build a binary distribution"
+
+	# set the default variable
+	config.set_if("BUILD_MODE", lambda : "Debug")
+	config.set_comment("BUILD_MODE", "one of Debug or Release")
 
 maat.post_inits.append(maat.FunDelegate(install_default_goals))

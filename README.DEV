@@ -20,13 +20,13 @@
 
 ===== Engine =====
 
-[ ] add building modes
 [ ] provide commands for rule as writing shell commands
 [ ] support invocation from non-top make.py
 [ ] add command to support file generation from variable content
 [ ] add goal to build a distribution (source, binary, etc)
 [ ] add automatic download of dependencies (from OS or from network)
 [ ] add file update resolution based on file content
+[X] add building modes
 [X] display percentage of build for each action
 [X] Path are now iterable if they are directories and return their content. 
 [X] add goal to perform installation

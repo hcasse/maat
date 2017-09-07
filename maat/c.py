@@ -37,6 +37,8 @@ CONFIG_CC = config.FindProgram("C compiler", "CC", ["gcc", "cc"])
 CONFIG_CXX = config.FindProgram("C++ compiler", "CXX", ["g++", "c++"])
 CONFIG_AR = config.FindProgram("library linker", "AR", ["ar"])
 
+config.set_if("CFLAGS_Debug", lambda: "-g3")
+config.set_if("CFLAGS_Release", lambda: "-O3")
 
 # system dependent configuration
 if curenv.IS_WINDOWS:
@@ -205,6 +207,13 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 		added = ""
 		if dyn:
 			added = "-fPIC"
+		if o.BUILD_MODE <> "":
+			f = o["CFLAGS_%s" % o.BUILD_MODE]
+			if f <> None:
+				added = "%s %s" % (added, f)
+			f = o["CXXFLAGS_%s" % o.BUILD_MODE]
+			if f <> None:
+				added = "%s %s" % (added, f)
 		d = file(maat_dir / o.path.parent().relative_to_top())
 		if not d.recipe:
 			recipe.ActionRecipe([d], [], action.MakeDir(d.path))
@@ -239,6 +248,10 @@ LIBS = None, RPATH = None, INSTALL_TO = ""):
 	recipe.ActionRecipe([prog], objs, Linker(prog, objs, contains_cxx(sources)))
 	if LDFLAGS:
 		prog.LDFLAGS = LDFLAGS
+	if prog.BUILD_MODE <> "":
+		f = prog["LDFLAGS_%s" % prog.BUILD_MODE]
+		if f <> None:
+			prog.ADDED_LDFLAGS = "%s %s" % (prog.ADDED_LDFLAGS, f)
 	if LIBS:
 		post_inits.append(LibSolver(prog, LIBS))
 	if RPATH:
@@ -286,7 +299,11 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL_TO = "", DYN_INSTALL_TO = ""
 		recipe.ActionRecipe([lib], objs, Linker(lib, objs, contains_cxx(sources)))
 		lib.ADDED_LDFLAGS = "-shared"
 		if LDFLAGS:
-			prog.LDFLAGS = LDFLAGS
+			lib.LDFLAGS = LDFLAGS
+		if lib.BUILD_MODE <> "":
+			f = lib["LDFLAGS_%s" % lib.BUILD_MODE]
+			if f <> None:
+				lib.ADDED_LDFLAGS = "%s %s" % (lib.ADDED_LDFLAGS, f)
 		if LIBS:
 			post_inits.append(LibSolver(prog, LIBS))
 		if RPATH:
