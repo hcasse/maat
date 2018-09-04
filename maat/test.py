@@ -43,7 +43,7 @@ class Case(recipe.Recipe):
 		recipe.Recipe.__init__(self, [maat.path(name)], deps)
 		self.tests = []
 		self.name = name
-		recipe.get_file(name).set_phony()
+		recipe.get_file(name).set_goal()
 		global TEST_CASES
 		TEST_CASES.append(self.ress[0])
 
@@ -77,7 +77,7 @@ class Test(recipe.Recipe):
 		recipe.get_file(name).set_phony()
 		self.case = case
 		case.add(self)
-		self.ress[0].set_phony()
+		self.ress[0].set_goal()
 
 	def success(self, ctx):
 		"""Record the current test as a success and display
@@ -148,6 +148,7 @@ class OutputTest(Test):
 		else:
 			out_stream = NULL
 		if self.err:
+			maat.mkdir(str(self.err.parent()))
 			err_stream = open(str(self.err), "w")
 		else:
 			err_stream = NULL
@@ -181,6 +182,7 @@ class OutputTest(Test):
 		if self.err:
 			if not os.path.exists(self.err_ref):
 				self.info(ctx, "no reference file for error, creating it!")
+				maat.mkdir(str(self.err_ref.parent()))
 				shutil.copyfile(self.err, self.err_ref)
 			else:
 				c = 0
@@ -192,13 +194,70 @@ class OutputTest(Test):
 			
 		# display result
 		self.success(ctx)
-			
+
+
+class CommandTest(Test):
+	"""A command test just run a command and examine the return code.
+	If the return code is 0, the test is passed. Else the test is
+	considered as failed."""
+	
+	def __init__(self, case, name, args, out = None, err = None, inp = None, deps = []):
+		Test.__init__(self, case, name, deps)
+		self.args = args
+		self.inp = inp
+		self.out = out
+		self.err = err
+	
+	def check(self, rc):
+		return rc == 0
+	
+	def test(self, ctx):
+		self.perform(ctx)
+		if self.out:
+			maat.mkdir(str(self.out.parent()))
+			out_stream = open(str(self.out), "w")
+		else:
+			out_stream = NULL
+		if self.err:
+			maat.mkdir(str(self.err.parent()))
+			err_stream = open(str(self.err), "w")
+		else:
+			err_stream = NULL
+		if self.inp:
+			in_stream = open(str(self.input), "r")
+		else:
+			in_stream = NULL
+		cmd = action.make_line(self.args)
+		if maat.verbose:
+			ctx.print_info("running %s" % cmd)
+		rc = subprocess.call(cmd, stdin = in_stream, stdout = out_stream, stderr = err_stream, shell = True)
+		if self.check(rc):
+			self.success(ctx)
+		else:
+			self.failure(ctx, "return code = %d, command = %s" % (rc, cmd))
+
+class FailingCommandTest(CommandTest):
+	"""Test launching a command and that succeed if the command fails."""
+
+	def __init__(self, case, name, args, out = None, err = None, inp = None, deps = []):
+		CommandTest.__init__(self, case, name, args, out, err, inp, deps)
+
+	def check(self, rc):
+		return rc <> 0
+
 
 def case(name, deps = []):
 	"""Build a test a case, that is, an abstract goal
 	with a recipe launching tests."""
 	return Case(name, deps)
 
+def command(case, name, args, out = None, err = None, inp = None, deps = []):
+	"""Build a command test that run the command and examine return code."""
+	return CommandTest(case, name, args, out, err, inp, deps)
+
+def failing_command(case, name, args, out = None, err = None, inp = None, deps = []):
+	"""Build a command test that run the command and check from the return code if the command failed."""
+	return FailingCommandTest(case, name, args, out, err, inp, deps)
 
 def output(case, name, cmd, out = None, out_ref = None, err = None, err_ref = None, input = None, deps = []):
 	"""Build a test that launches a command compares output."""
@@ -208,7 +267,7 @@ def post_init():
 	"""Initialize the test goal."""
 	path = env.cenv.path / "test"
 	if not recipe.file_db.has_key(path):
-		maat.phony("test", TEST_CASES)
+		maat.goal("test", TEST_CASES)
 
 
 maat.post_inits.append(maat.FunDelegate(post_init))

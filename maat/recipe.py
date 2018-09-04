@@ -129,13 +129,16 @@ class File(env.MapEnv):
 		* if it doesn't exist and it is not phony
 		* if the signature has changed,
 		* if the dependencies are younger."""
-		if self.is_goal:
+		if self.is_goal or self.is_phony:
 			#print "DEBUG: %s updated because it is phony!" % self
 			return True
-		elif not self.is_phony and not self.actual().exists():
-			#print "DEBUG: %s updated because it doesn't exist!" % self
-			return True
-		elif not self.recipe:
+		elif not self.actual().exists():
+			if self.recipe <> None:
+				#print "DEBUG: %s updated because it doesn't exist!" % self
+				return True
+			else:
+				raise common.MaatError("don't know how to build %s?" % self)
+		elif self.recipe == None:
 			return False
 		elif not sign.test(self):
 			#print "DEBUG: %s updated because signature changed!" % self
@@ -155,6 +158,7 @@ class File(env.MapEnv):
 				d.collect_updates(targets)
 		if self not in targets and self.needs_update():
 			targets.append(self)
+			
 	
 	def collect_all(self, targets):
 		"""Collect all the files that may be made."""
@@ -178,7 +182,7 @@ def add_alias(file, name):
 
 def get_file(path):
 	"""Get the file matching the given path in the DB. Apply
-	localisation rules relative to a particular make.py if the path
+	localization rules relative to a particular make.py if the path
 	is not absolute."""
 	
 	# apply localisation rule
@@ -193,6 +197,25 @@ def get_file(path):
 		return file_db[str(path)]
 	else:
 		return File(path)
+
+
+def get_goal(path):
+	"""Get the goal matching the given path in the DB. Apply
+	localization rules relative to a particular make.py if the path
+	is not absolute. If the goal cannot be found, raise a MaatError."""
+	
+	# apply localisation rule
+	if not os.path.isabs(str(path)):
+		fpath = env.cenv.path / path
+	else:
+		fpath = common.Path(path)
+	fpath = fpath.norm()
+	
+	# find the file
+	if file_db.has_key(str(fpath)):
+		return file_db[str(fpath)]
+	else:
+		raise common.MaatError("goal %s does not exist" % path)
 
 
 def get_files(paths):

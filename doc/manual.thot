@@ -16,27 +16,23 @@ for GNU Make) like Scons, AAP, Ant, etc but they don't maintain
 the nice principle of recipes (also known as rules).
 
 A recipe is formed of three components:
-  * the target files that the products of the rule,
-  * the dependency files that the targets are build from,
+  * the target files that is produced by the recipe,
+  * the dependency files that the targets is using,
   * the action that performs the build of the target from the dependencies.
 
 The concept is very simple: if the targets are older than the dependencies,
 the action is executed and must build the target files using the dependency files.
-Such a simple is very beautiful because it's enough to represent most building
-process of most applications including executables, static and dynamic libraries
-and anything where exists transforming program on files. But most alternatives
-to GNU Make dropped such a treasure.
+Such a simple concept is very beautiful because it's enough to represent most building process of most applications including executables, static and dynamic libraries and anything that is the transformation of a set of files to a set of files. But most alternatives to GNU Make dropped such a treasure.
 
 Yet, GNU Make (and its ancestors) has two main drawbacks:
   * inefficient solving process of generic recipes causing combinatorial explosion of file lookup,
-  * inadequate script layer that makes the task of building automatically recipes exceedingly hard and non-modular.
+  * inadequate script layer that makes the task of building automatically recipes exceedingly hard and non-modular with complex scripts or big applications.
 
 @(MAAT) try to solve both problems while keeping the concept of generic recipes.
 The first issue is solved by reducing the domain of lookup for automatic recipes:
 only dependency strings between a source file and its final object are considered.
 The second issue is simply achieved using Python as the script system.
-Fortunately, Python alone is not enough and @(MAAT) provides lots of common facilities
-to create and control recipes.
+Fortunately, Python alone is not enough and @(MAAT) provides lots of common facilities to create and control recipes.
 
 Concerning building systems like CMake or AutoTools, the integration inside
 @(MAAT) comes from the easy statement that there is no reason to separate
@@ -46,16 +42,12 @@ done and therefore can identify which are the requirements for building
 the application.
 
 {{Selanit-Maat-800px.png?150 }}
-**Maat** or **Ma'at** was the ancient Egyptian
-concept of truth, balance, order, harmony, law, morality, and justice.
-Maat was also personified as a goddess regulating the stars, seasons,
-and the actions of both mortals and the deities, who set the order of 
-he universe from chaos at the moment of creation. 
+**Maat** or **Ma'at** was the ancient Egyptian concept of truth, balance, order, harmony, law, morality, and justice. Maat was also personified as a goddess regulating the stars, seasons, and the actions of both mortals and the deities, who set the order of the universe from chaos at the moment of creation. 
 
-From [[https://en.wikipedia.org/wiki/Maat|Wikipedia]].
+Excerpt from [[https://en.wikipedia.org/wiki/Maat|Wikipedia]].
 
 @(MAAT) is delivered under [[http://www.gnu.org/licenses/gpl.html|GPL v3]]
-license and copyright by H. Cassé <hugues.casse@irit.fr>.
+license and copyrighted by H. Cassé <hugues.casse@irit.fr>.
 
 
 ===== Features =====
@@ -83,7 +75,7 @@ write of custom rules.
 
 ===== To do =====
 
-Lots of work need to be done before @(MAAT) reaches the power of
+A lot of work needs to be done before @(MAAT) reaches the power of
 Autotools or CMake. The future development encompasses:
   * parallel build,
   * flex and bison support in C module,
@@ -91,17 +83,17 @@ Autotools or CMake. The future development encompasses:
   * Ada support,
   * Java support,
   * Python support,
-  * packaging of the application / library. 
+  * automatic packaging of the application/library.
 
 
 ===== FAQ =====
 
 **Why is @(MAAT) faster than GNU Make with implicit rules?**
 
-The main with GNU Make and implicit rules is that it has to explore
-the whole set of derivation between any involved file and any
+The main issue with GNU Make and implicit rules is that it has to explore
+the whole set of derivations between any involved file and any
 possible source of it and the complexity of this work depends on the
-number of file and of explicit rules.
+number of files and of explicit rules.
 
 @(MAAT) supports a form of implicit rule but the lookup is only
 performed on the request of a particular rule and this request is
@@ -109,7 +101,7 @@ always based on the bottom-level source file and designs a particular
 type of target file.
 
 For example, the ''c.program'' rule can take different types of sources
-(''.c'', ''.cpp'', ''.l'', etc). When a ''.l'' source is found,
+(''.c'', ''.cpp'', ''.l'', etc). If  a source is a ''.l'' ,
 ''c.program'' will ask for a ''.o'' corresponding to its sources.
 If these sources includes a file named ''lexer.l'', @(MAAT) will
 only look on the implicit paths starting at ''.l'' and ending by ''.o''.
@@ -120,18 +112,18 @@ It is equivalent to traverse a small graph and the found path will be:
 **Why sticking to the source/dependency/action abstraction?**
 
 Some build system (like ant) have give up the source/dependency/action
-abstraction. This usually means that tare he build process is described as
+abstraction. This usually means that the build process is described as
 a list of actions but the products of the compilation often are
-interdependent. This means that the dependencies has to be expressed
-in a different way but they stay here.
+interdependent. This requires, in turn, that the dependencies have to be expressed
+in a different way but they are still here.
 
-Second, an abstraction is a good thing: the developer don't need to be
+Second, an abstraction is a good thing: the developers don't need to be
 bothered with the order and the details of the compilation; this is the
 task of the build system and the source/dependency/action abstraction is
 easy to understand.
 
 Third, the source/dependency/action abstraction is also easy to extend.
-Some compilation method is missing or the developer needs to add its
+Some compilation methods are missing or the developer needs to add its
 own goal: it is quite easy to express it with this abstraction and
 to link it with other goals.
 
@@ -431,9 +423,9 @@ class IsGCC(config.Config):
 
 
 
-====== Basic Commands and Variable ======
+====== Basic Commands and Rules ======
 
-@(MAAT) Python package provides basic command and variable that
+@(MAAT) Python package provides basic command and rules that
 help the writing of scripts.
 
 ===== Environment Management =====
@@ -510,6 +502,7 @@ my_goal.DESCRIPTION = "description"
 There are different ways to generate files that are built as rules:
   * ''makefile''(//path//, //content//) -- generate the file correspoding to the //path//
 and write inside the given //content//.
+  * ''directory''(//path//) -- this goal ensures that the directory corresponding to the given //path// exists.
 
 
 ===== Actions =====
@@ -531,9 +524,21 @@ files; if ignore_error is true, any error during the removal will be ignored.
 
 ====== Special Variables ======
 
+===== Global Variables =====
+
   * ''BPATH'' -- path used to build files in (as default, the directory containing the script).
   * ''PROJECT'' -- project name.
   * ''VERSION'' -- current version of the project.
+
+
+===== File Variables =====
+
+These variable can set on files (that are also environments) to change the way the file is used or to provide additional information. One way to assign a variable to a file is:
+<code python>
+file(FILE_PATH).VARIABLE = VALUE
+</code>
+
+  * ''DESCRIPTION'' -- put on a goal, provides usage description with ''-l'' option.
 
 
 ====== Standard Environment ======
@@ -806,6 +811,128 @@ You can customize the flags depending on the mode using the variables
 Additionally, you can define your own ''BUILD_MODE'' and, if the corresponding
 ''CFLAGS'' and ''LDFLAGS'' variable exist, they will be used in
 compilation and linkage implemented in this module.
+
+
+
+
+====== Test Module ======
+
+This module aims to make automatic testing of programs compiled, or not,
+using @(MAAT). In each subdirectory //DIR// where tests are created,
+they can be invoked using the command:
+<code sh>
+./make.py DIR/test
+</code>
+
+All tests and their results are displayed in turn and overall statistics
+are produced at the end.
+
+To uses tests in ''make.py'', just import the ''test'' module:
+<code python>
+from maat import test
+</code>
+
+===== Test Case =====
+
+Tests are grouped in case tests that are named, optionally support
+dependencies on other made files and are declared by:
+<code python>
+test.case(NAME, [DEPENDENCIES])
+</code>
+
+A particular test case named //CASE// in a directory //DIR// can be invoked 
+alone with:
+<code python>
+./make.py DIR/CASE
+</code>
+
+Test cases are usual made phony goals: they are rebuilt each time
+they are invoked. In the following, different test facilities are
+presented. This tests have also a name and ca be invoked separately
+with the command:
+<code python>
+./make.py DIR/TEST
+</code>
+
+
+===== Command Test =====
+
+A command test just invoke a command with a particular set of parameters.
+The command may be built the @(MAAT) build system. If the command
+succeed (return code 0 on most OS), the test is passed. If the command
+fails (return code different from 0 on most OS), the test fails.
+
+A command test is declare by:
+<code python>
+test.command(CASE, NAME, [ARGUMENTS],
+	inp = IN,
+	out = OUT,
+	err = ERR,
+	deps = DEPENDENCIES)
+</code>
+Where:
+  * //CASE// -- a test case as declared in previous section,
+  * //NAME// -- string representing the name of the test,
+  * //ARGUMENTS// -- program (first) and arguments passed to the program,
+  * //IN// (optional) -- file to use as standard input of the command,
+  * //OUT// (optional) -- file to store the standard output of the command,
+  * //ERR// (optional) -- file to store the standard error of the command,
+  * //DEPENDENCIES// (optional) -- list of @(MAAT) dependencies that must be
+made before running the test.
+
+If the program is already known by @(MAAT), it is automatically added
+to the list of dependencies.
+
+A reverse version of this test exists: it succeeds when the command fails!
+Its syntax is very close:
+<code python>
+test.failing_command(CASE, NAME, [ARGUMENTS],
+	inp = IN,
+	out = OUT,
+	err = ERR,
+	deps = DEPENDENCIES)
+</code>
+
+
+===== Output Test =====
+
+The goal of an output test is to run a command and to compare the output
+and/or the error output with a reference output and/or error output.
+The test succeeds if the outputs are the same or fails if they are
+different.
+
+Such a test is declared with:
+<code python>
+test.output(CASE, NAME, [ARGUMENTS],
+	input = IN,
+	out = OUT,
+	out_ref = OUT_REF,
+	err = ERR,
+	err_ref = ERR_REF, 
+	deps = DEPENDENCIES)
+</code>
+Where:
+  * //CASE// -- a test case as declared in previous section,
+  * //NAME// -- string representing the name of the test,
+  * //ARGUMENTS// -- program (first) and arguments passed to the program,
+  * //IN// (optional) -- path of a file to use as standard input,
+  * //OUT// (optional) -- file path for the output,
+  * //OUT_REF// (optional) -- file path for the reference output,
+  * //ERR// (optional) -- file path for error output,
+  * //ERR_REF// (optional) -- file path for error reference output,
+  * //DEPENDENCIES// (optional) -- list of @(MAAT) dependencies that must be
+made before running the test.
+
+If one of //OUT//, //ERR//, //OUT_REF// or //ERR_REF// is omitted,
+the corresponding output is simply ignored in the comparison.
+
+
+A reference output is created the first time the test is launched
+(when the reference file is missing). Then, if the output has changed
+because of the evolution of the software and, therefore, a new reference
+needs to be generated: just remove the old reference file and re-launch
+the test: the new reference file will be created. 
+
 
 
 ====== Command Line Options ======

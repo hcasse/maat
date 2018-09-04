@@ -92,6 +92,19 @@ def pop_env():
 	"""Pop the top environment."""
 	set_env(envstack.pop())
 
+def error(msg):
+	"""Display the message as an error."""
+	io.DEF.print_error(msg)
+
+def warn(msg):
+	"""Display the message as a warning."""
+	io.DEF.print_warning(msg)
+
+def panic(msg):
+	"""Display the message as an error and stop the build."""
+	io.DEF.print_error(msg)
+	sys.exit(1)
+
 set_env(env.curenv)
 
 
@@ -204,16 +217,14 @@ def make_work(ctx = io.Context()):
 				if not todo:
 					todo = ["all"]
 				sign.load(ctx)
-				for a in todo:
-					targets = []
-					if do_always:
-						recipe.get_file(a).collect_all(targets)
-					else:
-						recipe.get_file(a).collect_updates(targets)
-					b = builder(ctx, targets)
-					if do_time:
-						b.show_time = True
-					b.build()
+				targets = []
+				for target in todo:
+					target = recipe.get_goal(target)
+					target.collect_updates(targets)
+				b = builder(ctx, targets, do_always)
+				if do_time:
+					b.show_time = True
+				b.build()
 				sys.exit(0)
 			except common.MaatError, e:
 				ctx.print_error(e)
@@ -418,6 +429,10 @@ def temp(name = None):
 		mkdir(str(p))
 	return p
 
+def which(prog):
+	"""Look for a program in the system PATH."""
+	return common.lookup_prog([prog], os.getenv("PATH").split(":"));
+	
 
 ######## compatibility functions ##########
 
@@ -454,5 +469,11 @@ def show(msg):
 
 def makedir(path):
 	"""Build a directory."""
-	return action.Makedir(path)
+	return action.MakeDir(path)
 
+
+###### rules using shortcuts #####
+
+def directory(name):
+	"""Build a rule building a directory."""
+	return rule(name, None, makedir(name))

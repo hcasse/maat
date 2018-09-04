@@ -75,11 +75,14 @@ class Job:
 			self.target.recipe.action(self.builder.ctx)
 		self.finalize()
 
+	def __str__(self):
+		return str(self.target)
+
 
 class Builder:
 	"""Provide a way to build the targets."""
 
-	def __init__(self, ctx, targets):
+	def __init__(self, ctx, targets, force = False):
 		self.ctx = ctx
 		self.todo = [Job(self, t) for t in targets]
 		self.done = []
@@ -87,6 +90,7 @@ class Builder:
 		self.total = len(targets)
 		self.show_time = False
 		self.start_time = common.time()
+		self.force = force
 	
 	def start(self, job):
 		"""Mark the given job."""
@@ -96,7 +100,7 @@ class Builder:
 		"""Return next job to do or None."""
 		for j in self.todo:
 			if  j not in self.current \
-			and (j.target.recipe == None or all(d not in self.todo for d in j.target.recipe.deps)):
+			and (self.force or j.target.recipe == None or all(d not in self.todo for d in j.target.recipe.deps)):
 				self.start(j)
 				return j
 		return None
@@ -121,15 +125,15 @@ class Builder:
 class DryBuilder(Builder):
 	"""Builder that don't do anything except display what is performed."""
 	
-	def __init__(self, ctx, targets):
-		Builder.__init__(self, ctx, targets)
+	def __init__(self, ctx, targets, force):
+		Builder.__init__(self, ctx, targets, force)
 	
 	def build(self):
 		self.ctx.print_warning("dry run!")
 		for job in self.todo:
 			if not job.target.is_hidden:
+				self.ctx.print_info("To make: %s" % job)
 				job.push_env()
-				self.ctx.print_info("To make %s" % job.target)
 				cmds = []
 				job.target.recipe.commands(cmds)
 				for cmd in cmds:
@@ -138,10 +142,11 @@ class DryBuilder(Builder):
 
 
 class QuestBuilder(Builder):
-	"""Builder that don't do anything except test if an udpate is required."""
+	"""Builder that don't do anything except test if an udpate is required.
+	Exit with return code 1."""
 	
-	def __init__(self, ctx, targets):
-		Builder.__init__(self, ctx, targets)
+	def __init__(self, ctx, targets, force):
+		Builder.__init__(self, ctx, targets, force)
 	
 	def build(self):
 		for job in self.todo:
@@ -152,8 +157,8 @@ class QuestBuilder(Builder):
 class SeqBuilder(Builder):
 	"""Builder that performs the drive sequentially."""
 
-	def __init__(self, ctx, targets):
-		Builder.__init__(self, ctx, targets)
+	def __init__(self, ctx, targets, force):
+		Builder.__init__(self, ctx, targets, force)
 	
 	def build_job(self, job):
 		if not job.target.is_hidden:

@@ -20,7 +20,6 @@
 
 ===== Engine =====
 
-[ ] provide commands for rule as writing shell commands
 [ ] support invocation from non-top make.py
 [ ] add command to support file generation from variable content
 [ ] add goal to build a distribution (source, binary, etc)
@@ -35,6 +34,7 @@
 [X] add map for symbolic names (program, library, etc)
 [X] add support for building in a different directory
 [X]	add "[", "]" syntax to environment
+[ ] provide commands for rule as writing shell commands (???)
 
 ===== Actions =====
 

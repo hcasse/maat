@@ -303,3 +303,14 @@ def time():
 	"""Get the current time (in s)."""
 	return pytime.time()
 
+
+def lookup_prog(progs, paths):
+	"""Lookup for a program corresponding to one of the list
+	in the given list of paths and return it. If the program cannot
+	be found, return None."""
+	for path in paths:
+		for prog in progs:
+			ppath = os.path.join(path, prog)
+			if os.access(ppath, os.X_OK):
+				return ppath
+	return None
