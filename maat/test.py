@@ -39,16 +39,18 @@ class Case(recipe.Recipe):
 	succeeded = 0
 	longer = None
 	
-	def __init__(self, name, deps):
+	def __init__(self, name, deps, private):
 		recipe.Recipe.__init__(self, [maat.path(name)], deps)
 		self.tests = []
 		self.name = name
 		recipe.get_file(name).set_goal()
-		global TEST_CASES
-		TEST_CASES.append(self.ress[0])
+		if not private:
+			global TEST_CASES
+			TEST_CASES.append(self.ress[0])
 
 	def add(self, test):
 		self.tests.append(test)
+		self.deps = self.deps + test.deps
 		self.longer = max(self.longer, len(test.name))
 	
 	def action(self, ctx):
@@ -201,18 +203,24 @@ class CommandTest(Test):
 	If the return code is 0, the test is passed. Else the test is
 	considered as failed."""
 	
-	def __init__(self, case, name, args, out = None, err = None, inp = None, deps = []):
+	def __init__(self, case, name, args, out = None, err = None, inp = None, deps = None, dir = None):
+		if dir <> None:
+			deps = common.as_list(deps) + [ dir ]
 		Test.__init__(self, case, name, deps)
 		self.args = args
 		self.inp = inp
 		self.out = out
 		self.err = err
+		self.dir = dir
 	
 	def check(self, rc):
 		return rc == 0
 	
 	def test(self, ctx):
 		self.perform(ctx)
+		if self.dir <> None:
+			old_dir = os.getcwd()
+			os.chdir(self.dir)
 		if self.out:
 			maat.mkdir(str(self.out.parent()))
 			out_stream = open(str(self.out), "w")
@@ -235,27 +243,30 @@ class CommandTest(Test):
 			self.success(ctx)
 		else:
 			self.failure(ctx, "return code = %d, command = %s" % (rc, cmd))
+		if self.dir <> None:
+			os.chdir(old_dir)
 
 class FailingCommandTest(CommandTest):
 	"""Test launching a command and that succeed if the command fails."""
 
-	def __init__(self, case, name, args, out = None, err = None, inp = None, deps = []):
-		CommandTest.__init__(self, case, name, args, out, err, inp, deps)
+	def __init__(self, case, name, args, out = None, err = None, inp = None, deps = None, dir = None):
+		CommandTest.__init__(self, case, name, args, out, err, inp, deps, dir)
 
 	def check(self, rc):
 		return rc <> 0
 
 
-def case(name, deps = []):
+def case(name, deps = None, private = False):
 	"""Build a test a case, that is, an abstract goal
-	with a recipe launching tests."""
-	return Case(name, deps)
+	with a recipe launching tests. If private is to True, the case
+	is not added to the global list of test cases."""
+	return Case(name, deps, private)
 
-def command(case, name, args, out = None, err = None, inp = None, deps = []):
+def command(case, name, args, out = None, err = None, inp = None, deps = None, dir = None):
 	"""Build a command test that run the command and examine return code."""
-	return CommandTest(case, name, args, out, err, inp, deps)
+	return CommandTest(case, name, args, out, err, inp, deps, dir)
 
-def failing_command(case, name, args, out = None, err = None, inp = None, deps = []):
+def failing_command(case, name, args, out = None, err = None, inp = None, deps = None, dir = None):
 	"""Build a command test that run the command and check from the return code if the command failed."""
 	return FailingCommandTest(case, name, args, out, err, inp, deps)
 

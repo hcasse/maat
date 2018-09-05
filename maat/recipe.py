@@ -514,3 +514,21 @@ def ensure_dir(path):
 		ActionRecipe([target], [], action.MakeDir(path))
 	return target
 
+
+def parse_deps(path):
+	"""Scan and add to the database dependencies (without action) expressed
+	with standard Makefile format. The paths in the dependency file are
+	interpreted relatively to the current directory."""
+	try:
+		f = open(str(path), "r")
+		for l in f.xreadlines():
+			p = l.find(":")
+			if p >= 0:
+				ts = [file(t) for t in l[:p].split()]
+				ds = [file(d) for d in l[p+1:-1].split()]
+				for t in ts:
+					if t.recipe:
+						for d in ds:
+							t.recipe.add_dep(d)
+	except IOError, e:
+		pass

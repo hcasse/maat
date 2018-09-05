@@ -837,7 +837,7 @@ from maat import test
 Tests are grouped in case tests that are named, optionally support
 dependencies on other made files and are declared by:
 <code python>
-test.case(NAME, [DEPENDENCIES])
+test.case(NAME, [DEPENDENCIES], [private = True])
 </code>
 
 A particular test case named //CASE// in a directory //DIR// can be invoked 
@@ -850,9 +850,17 @@ Test cases are usual made phony goals: they are rebuilt each time
 they are invoked. In the following, different test facilities are
 presented. This tests have also a name and ca be invoked separately
 with the command:
-<code python>
+<code sh>
 ./make.py DIR/TEST
 </code>
+
+Another way to invoke test cases is to use the goal ''test'':
+<code sh>
+./make.py test
+</code>
+
+This command will invoke all test cases declared except test cases
+built with option ''private = True''.
 
 
 ===== Command Test =====
@@ -868,7 +876,8 @@ test.command(CASE, NAME, [ARGUMENTS],
 	inp = IN,
 	out = OUT,
 	err = ERR,
-	deps = DEPENDENCIES)
+	deps = DEPENDENCIES,
+	dir = DIR)
 </code>
 Where:
   * //CASE// -- a test case as declared in previous section,
@@ -878,7 +887,9 @@ Where:
   * //OUT// (optional) -- file to store the standard output of the command,
   * //ERR// (optional) -- file to store the standard error of the command,
   * //DEPENDENCIES// (optional) -- list of @(MAAT) dependencies that must be
-made before running the test.
+made before running the test,
+  * //DIR// -- directory in which the command is executed (automatically added
+to dependencies of the test).
 
 If the program is already known by @(MAAT), it is automatically added
 to the list of dependencies.
@@ -890,7 +901,8 @@ test.failing_command(CASE, NAME, [ARGUMENTS],
 	inp = IN,
 	out = OUT,
 	err = ERR,
-	deps = DEPENDENCIES)
+	deps = DEPENDENCIES,
+	dir = DIR)
 </code>
 
 

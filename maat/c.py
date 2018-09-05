@@ -1,4 +1,4 @@
-#	MAAT top-level script
+#	MAAT C module
 #	Copyright (C) 2016 H. Casse <hugues.casse@laposte.net>
 #
 #	This program is free software: you can redistribute it and/or modify
@@ -192,7 +192,7 @@ def parse_dep(path):
 						for d in ds:
 							t.recipe.add_dep(d)
 	except IOError, e:
-		pass	
+		pass
 
 def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 	"""Build the objects and their recipes and return the list of objects.

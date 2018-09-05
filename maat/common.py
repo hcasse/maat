@@ -314,3 +314,15 @@ def lookup_prog(progs, paths):
 			if os.access(ppath, os.X_OK):
 				return ppath
 	return None
+
+
+def as_list(x):
+	"""Convert the given argument to a list: empty if x = None,
+	[x] if arg is not a list or itself if x is a list."""
+	if x == None:
+		return []
+	if isinstance(x, list):
+		return x
+	else:
+		return [ x ]
+
