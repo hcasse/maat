@@ -102,7 +102,7 @@ gen_command(".cmx", ".ml", comp_ml_to_cmx)
 
 # functions
 
-def make_objects(dir, sources, libs, opt, CFLAGS):
+def make_objects(dir, sources, opt, CFLAGS):
 	"""Build the objects and their recipes and return the list of objects.
 	".cmo/x" are automatically added to CLEAN list."""
 	objs = [file(recipe.gen(dir, ".cmx" if opt else ".cmo", s.path)) for s in sources]
@@ -113,11 +113,11 @@ def make_objects(dir, sources, libs, opt, CFLAGS):
 			f = o["CFLAGS_%s" % o.BUILD_MODE]
 			if f <> None:
 				added = "%s %s" % (added, f)
-		d = file(maat_dir / o.path.parent().relative_to_top())
-		if not d.recipe:
-			recipe.ActionRecipe([d], [], action.MakeDir(d.path))
-			d.set_hidden()
-		o.recipe.deps.append(d)
+		#d = file(maat_dir / o.path.parent().relative_to_top())
+		#if not d.recipe:
+		#	recipe.ActionRecipe([d], [], action.MakeDir(d.path))
+		#	d.set_hidden()
+		#o.recipe.deps.append(d)
 		#df = (d.path / (o.path.get_base().get_file() + ".d"))
 		#added = added + " -MMD -MF %s" % df.relative_to_cur()
 		#if added:
@@ -144,11 +144,11 @@ LIBS = None, INSTALL_TO = "", opt = False):
 	recipe.add_alias(prog, name)
 
 	# build objects
-	sources = [file(s) for s in sources]
-	objs = make_objects(prog.path.parent(), sources, flags)
+	sources = [file(s) for s in common.as_list(sources)]
+	objs = make_objects(prog.path.parent(), sources, opt, flags)
 
 	# append the right suffix to library names
-	libs = [l + suff for l in libs]
+	libs = [l + suff for l in common.as_list(LIBS)]
 	
 	# build program
 	recipe.ActionRecipe([prog], objs, Linker(prog, objs, libs, opt))
@@ -158,8 +158,8 @@ LIBS = None, INSTALL_TO = "", opt = False):
 		f = prog["LDFLAGS_%s" % prog.BUILD_MODE]
 		if f <> None:
 			prog.ADDED_LDFLAGS = "%s %s" % (prog.ADDED_LDFLAGS, f)
-	if LIBS:
-		post_inits.append(LibSolver(prog, LIBS))
+	#if LIBS:
+	#	post_inits.append(LibSolver(prog, LIBS))
 	
 	# record it
 	std.ALL.append(prog)

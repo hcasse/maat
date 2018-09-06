@@ -150,13 +150,12 @@ class ParentEnv(Env):
 		self.parent = parent
 	
 	def get(self, id, default = None):
-		x = self.name
-		#print "DEBUG: ParentEnv(%s).get(%s)" % (x, id)
+		#print "DEBUG: ParentEnv(%s).get(%s)" % (self.name, id)
 		if self.parent == None:
 			r = default
 		else:
 			r = self.parent.get(id, default)
-		#print "DEBUG: ending %s" % x
+		#print "DEBUG: ending %s" % self.name
 		return r
 	
 	def append(self, id, val):

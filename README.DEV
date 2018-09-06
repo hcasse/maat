@@ -95,3 +95,43 @@
 
 [X] Add dependency system between configurations.
 
+
+====== Internal Work ======
+
+
+===== Generic Rules =====
+
+Generic rules allows to infer string of rules between a result suffix
+''.res'' and a depenedency suffix ''.dep''. The generic rules are implemented
+in the ''recipe'' module.
+
+To implement this, a kind of graph,
+more exactly a first a forest of tree is maintained.
+The node of the graph are the extensions, class ''Ext'', and the edges
+are the generators, class ''Gen''. The edge can be crawled forward
+(''ext'' array) and backward (''backs'' array). All the nodes are stored
+in the map ''ext_db'', associating the extension as a string to the
+extension as an object of class ''Ext''.
+
+The ''gens'' map in ''Ext'' associates the current extension as source
+to any target extension for which a generic rules exists. If the ''gens''
+map of ''.dep'' contains a generation for ''.res'' (different of //None//),
+then the ''.dep'' can be translated to the ''.ress'' file.
+
+In fact, the obtained graph is transitively closed: if there is a rule
+to translate ''.a'' to ''.b'' and a rule to translate ''.b'' to ''.c''
+then there is an entry ''.c'' in ''.b'' ''gens'' array (straight)
+but also an entry ''.c''' in ''.a'' ''gens'' array (transitive).
+The overall result is that it is very quick to know if it is possible
+to test if there is some translation string from ''.a'' to ''.b''.
+''.b'' must in the ''gens'' map of ''.a''. As a second result, it is
+easy to compute the translation string from ''.a'' to ''.b'': starting
+at ''.a'', one has to follow the generation rules and extensions by
+accessing the ''.b'' entry in ''gens'' maps.
+ 
+
+
+
+
+
+

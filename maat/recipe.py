@@ -335,10 +335,12 @@ class Gen:
 		# update back link
 		self.res.backs.append(self)
 		
-		# update current gens
+		# update forward link
 		self.dep.update(res, self)
-		for ext in self.dep.gens:
-			self.res.update(ext, self)
+
+	def write(self, out):
+		"""Print the action of the generator."""
+		pass
 
 	def gen(self, res, dep):
 		"""Generate a recipe to produce the given result
@@ -353,6 +355,9 @@ class FunGen(Gen):
 	def __init__(self, res, dep, fun):
 		Gen.__init__(self, res, dep)
 		self.fun = fun
+
+	def write(self, out):
+		out.write("\t<fun>\n")
 	
 	def gen(self, res, dep):
 		return FunRecipe(self.fun, [res], [dep])
@@ -412,7 +417,14 @@ class ActionGen(Gen):
 		res = get_file(res)
 		dep = get_file(dep)
 		return DelayedRecipe([res], [dep], self.fun)
-	
+
+	def write(self, out):
+		a = self.fun([File(common.Path("*" + self.res.ext))], [File(common.Path("*" + self.dep.ext))])
+		cmds = []
+		a.commands(cmds)
+		for c in cmds:
+			out.write("\t%s\n" % c)
+
 
 def gen(dir, rext, dep):
 	"""Generate recipes to build res. A generation string is found between
@@ -424,10 +436,8 @@ def gen(dir, rext, dep):
 	# prepare the kernel
 	b = dep.get_base()
 	dext = dep.get_ext()
-	#b, dext = os.path.splitext(dep)
-	#_, n = os.path.split(b)
 	n = b.get_file()
-	kern = dir / n	#os.path.join(dir, n)
+	kern = dir / n
 
 	# initialize lookup process
 	if not ext_db.has_key(dext):

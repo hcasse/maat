@@ -42,12 +42,20 @@ def list_goals(ctx = io.Context()):
 def print_db():
 	"""Print the DB."""
 	
+	# print simple rules
 	done = { }
 	for f in recipe.file_db:
 		r = recipe.file_db[f].recipe
 		if r and r not in done:
 			done[r] = True
 			r.display(sys.stdout)
+
+	# print generic rules
+	for ext in recipe.ext_db.values():
+		for gen in ext.gens.values():
+			sys.stdout.write("*%s: *%s\n" % (gen.res.ext, ext.ext))
+			gen.write(sys.stdout)
+			sys.stdout.write("\n")
 
 
 def embed():
