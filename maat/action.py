@@ -403,3 +403,27 @@ class MakeFile(Action):
 	
 	def signature(self):
 		return "makefile(%s, %s)" % (self.path, self.content)
+
+
+class Rename(Action):
+	"""Rename a file to a different name."""
+	src = None
+	tgt = None
+	
+	def __init__(self, src, tgt):
+		self.src = common.Path(src)
+		self.tgt = common.Path(tgt)
+	
+	def execute(self, ctx):
+		try:
+			os.rename(self.src.path, self.tgt.path)
+		except OSError as e:
+			raise MaatError(str(e))
+	
+	def signature(self):
+		return "rename(%s, %s)" % (self.src.path, self.tgt.path)
+	
+	def commands(self, cmds):
+		cmds.append(self.signature())
+
+			

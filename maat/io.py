@@ -140,12 +140,12 @@ class Context:
 		"""End an action with success."""
 		if msg:
 			msg = "(%s) " % msg
-		print_action_final(msg + GREEN + BOLD + "[OK]" + NORMAL)
+		self.print_action_final(msg + GREEN + BOLD + "[OK]" + NORMAL)
 
 	def print_action_failure(self, msg = ""):
 		"""End an action with failure."""
 		if msg:
 			msg = "(%s) " % msg
-		print_action_final(msg + RED + BOLD + "[FAILED]" + NORMAL)
+		self.print_action_final(msg + RED + BOLD + "[FAILED]" + NORMAL)
 
 DEF = Context()

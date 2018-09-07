@@ -52,8 +52,11 @@ def print_db():
 
 	# print generic rules
 	for ext in recipe.ext_db.values():
-		for gen in ext.gens.values():
-			sys.stdout.write("*%s: *%s\n" % (gen.res.ext, ext.ext))
+		for (rext, gen) in ext.gens.items():
+			if gen.res.ext == rext:
+				sys.stdout.write("*%s: *%s\n" % (gen.res.ext, ext.ext))
+			else:
+				sys.stdout.write("[%s] *%s: *%s\n" % (rext, gen.res.ext, ext.ext))
 			gen.write(sys.stdout)
 			sys.stdout.write("\n")
 

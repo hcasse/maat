@@ -36,6 +36,8 @@ cxx_comps = ["g++", "c++"]
 CONFIG_CC = config.FindProgram("C compiler", "CC", ["gcc", "cc"])
 CONFIG_CXX = config.FindProgram("C++ compiler", "CXX", ["g++", "c++"])
 CONFIG_AR = config.FindProgram("library linker", "AR", ["ar"])
+CONFIG_LEX = config.FindProgram("lexer generator", "LEX", ["flex", "lex"])
+CONFIG_YACC = config.FindProgram("parser generator", "YACC", ["bison", "yacc"]) 
 
 config.set_if("CFLAGS_Debug", lambda: "-g3")
 config.set_if("CFLAGS_Release", lambda: "-O3")
@@ -61,27 +63,24 @@ env.root.CXX = "c++"
 env.root.AR = "ar"
 
 # convenient
-def contains_cxx(files):
+def contains(files, suffs):
 	for f in files:
-		if f.path.get_ext() in cpp_ext:
+		if f.path.get_ext() in suffs:
 			return True
 	return False
-
-def contains_c(files):
-	for f in files:
-		if f.path.get_ext() == ".c":
-			return True
-	return False
+		
 
 def is_cxx(deps):
-	return contains_cxx([dep.recipe.deps[0] for dep in deps if dep.recipe])
+	return contains([dep.recipe.deps[0] for dep in deps if dep.recipe], cpp_ext)
 
 def check_sources(srcs):
 	"""Check if sources contain C++ files or C file and select configuration accordingly."""
-	if contains_c(srcs):
+	if contains(srcs, [".c"]):
 		config.register(CONFIG_CC)
-	if contains_cxx(srcs):
+	if contains(srcs, cpp_ext):
 		config.register(CONFIG_CXX)
+	if contains(srcs, [".l"]):
+		config.register(CONFIG_LEX)
 	
 
 # commands
@@ -134,6 +133,12 @@ def comp_c_to_o(ress, deps):
 	return [ress[0].CC, ress[0].CFLAGS, "-o", ress[0], "-c", deps[0], ress[0].ADDED_FLAGS]
 def comp_cxx_to_o(ress, deps):
 	return [ress[0].CXX, ress[0].CXXFLAGS, ress[0].CFLAGS, "-o", ress[0], "-c", deps[0], ress[0].ADDED_FLAGS]
+def comp_l_to_c(ress, deps):
+	return [
+		action.ShellAction([ress[0].LEX, deps[0] ]),
+		action.Rename("lex.yy.c", ress[0])
+	]
+		
 
 gen_command(".o", ".c",  comp_c_to_o)
 gen_command(".o", ".cxx", comp_cxx_to_o)
@@ -141,7 +146,7 @@ gen_command(".o", ".cpp", comp_cxx_to_o)
 gen_command(".o", ".c++", comp_cxx_to_o)
 gen_command(".o", ".C",   comp_cxx_to_o)
 gen_command(".o", ".cc",   comp_cxx_to_o)
-
+gen_action(".c", ".l", comp_l_to_c)
 
 # Library Delegate
 class LibSolver(Delegate):
@@ -198,8 +203,12 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 	"""Build the objects and their recipes and return the list of objects.
 	".o" are automatically added to CLEAN list."""
 	check_sources(sources)
-	objs = [file(recipe.gen(dir, ".o", s.path)) for s in sources]
-	for o in objs:
+	objs = []
+	for s in sources:
+		fs = recipe.gen(dir, ".o", s.path)
+		std.CLEAN = std.CLEAN + fs
+		o = file(fs[-1])
+		objs.append(o)
 		if CFLAGS:
 			o.CFLAGS = CFLAGS
 		if CXXFLAGS:
@@ -224,7 +233,6 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 		if added:
 			o.ADDED_FLAGS = added
 		parse_dep(df)	
-	std.CLEAN = std.CLEAN + [obj.path.relative_to(env.top.path) for obj in objs]
 	return objs
 	
 
@@ -239,13 +247,9 @@ LIBS = None, RPATH = None, INSTALL_TO = ""):
 	# build objects
 	sources = [file(s) for s in sources]
 	objs = make_objects(prog.path.parent(), sources, CFLAGS, CXXFLAGS)
-	if contains_cxx(sources):
-		config.register(CONFIG_CXX)
-	else:
-		config.register(CONFIG_CC)
 	
 	# build program
-	recipe.ActionRecipe([prog], objs, Linker(prog, objs, contains_cxx(sources)))
+	recipe.ActionRecipe([prog], objs, Linker(prog, objs, is_cxx(sources)))
 	if LDFLAGS:
 		prog.LDFLAGS = LDFLAGS
 	if prog.BUILD_MODE <> "":
@@ -296,7 +300,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL_TO = "", DYN_INSTALL_TO = ""
 	# build dynamic library
 	if type in ["dynamic", "both"]:
 		lib = file(DYN_PREFIX + name + DYN_SUFFIX)
-		recipe.ActionRecipe([lib], objs, Linker(lib, objs, contains_cxx(sources)))
+		recipe.ActionRecipe([lib], objs, Linker(lib, objs, is_cxx(sources)))
 		lib.ADDED_LDFLAGS = "-shared"
 		if LDFLAGS:
 			lib.LDFLAGS = LDFLAGS
@@ -311,7 +315,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL_TO = "", DYN_INSTALL_TO = ""
 		todo.append(lib)
 		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)
-		if contains_cxx(sources):
+		if is_cxx(sources):
 			config.register(CONFIG_CXX)
 		else:
 			config.register(CONFIG_CC)

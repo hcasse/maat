@@ -64,7 +64,7 @@ class Linker(action.Action):
 	def added(self):
 		added = []
 		if self.prog.ADDED_PATHS:
-			added = ["-I%s" % p for p in self.prog.ADDED_PATHS]
+			added = ["-I %s" % p for p in self.prog.ADDED_PATHS]
 		if self.prog.ADDED_LDFLAGS:
 			added = added + [self.prog.ADDED_LDFLAGS]
 		if self.prog.ADDED_LDFLAGS:
@@ -105,8 +105,12 @@ gen_command(".cmx", ".ml", comp_ml_to_cmx)
 def make_objects(dir, sources, opt, CFLAGS):
 	"""Build the objects and their recipes and return the list of objects.
 	".cmo/x" are automatically added to CLEAN list."""
-	objs = [file(recipe.gen(dir, ".cmx" if opt else ".cmo", s.path)) for s in sources]
-	for o in objs:
+	objs = []
+	for s in sources:
+		fs = recipe.gen(dir, ".cmx" if opt else ".cmo", s.path)
+		std.CLEAN = std.CLEAN + fs
+		o = file(fs[-1])
+		objs.append(o)
 		o.CFLAGS = CFLAGS
 		added = ""
 		if o.BUILD_MODE <> "":
@@ -123,14 +127,14 @@ def make_objects(dir, sources, opt, CFLAGS):
 		#if added:
 		#	o.ADDED_FLAGS = added
 		#parse_dep(df)	
-	std.CLEAN = std.CLEAN + [obj.path.relative_to(env.top.path) for obj in objs]
 	return objs
 
 
 def program(name, sources, LDFLAGS = None, OCAMLCFLAGS = None, OCAMLOPTFLAGS = None,
 LIBS = None, INSTALL_TO = "", opt = False):
 	"""Called to build a C or C++ program."""
-
+	sources = [file(s) for s in common.as_list(sources)]
+	
 	# take into account the build mode
 	if opt:
 		suff = ".cmxa"
@@ -144,7 +148,6 @@ LIBS = None, INSTALL_TO = "", opt = False):
 	recipe.add_alias(prog, name)
 
 	# build objects
-	sources = [file(s) for s in common.as_list(sources)]
 	objs = make_objects(prog.path.parent(), sources, opt, flags)
 
 	# append the right suffix to library names

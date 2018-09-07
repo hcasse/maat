@@ -137,7 +137,7 @@ class File(env.MapEnv):
 				#print "DEBUG: %s updated because it doesn't exist!" % self
 				return True
 			else:
-				raise common.MaatError("don't know how to build %s?" % self)
+				raise common.MaatError("don't know how to build %s?" % self.path)
 		elif self.recipe == None:
 			return False
 		elif not sign.test(self):
@@ -337,6 +337,10 @@ class Gen:
 		
 		# update forward link
 		self.dep.update(res, self)
+		for e in self.res.gens:
+			if e not in self.dep.gens:
+				self.dep.update(e, self)
+
 
 	def write(self, out):
 		"""Print the action of the generator."""
@@ -400,7 +404,7 @@ class DelayedRecipe(ActionRecipe):
 	
 	def get_action(self):
 		if self.act == None:
-			self.act = self.fun(self.ress, self.deps)
+			self.act = action.make_actions(self.fun(self.ress, self.deps))
 		return self.act
 	
 
@@ -419,7 +423,7 @@ class ActionGen(Gen):
 		return DelayedRecipe([res], [dep], self.fun)
 
 	def write(self, out):
-		a = self.fun([File(common.Path("*" + self.res.ext))], [File(common.Path("*" + self.dep.ext))])
+		a = action.make_actions(self.fun([File(common.Path("*" + self.res.ext))], [File(common.Path("*" + self.dep.ext))]))
 		cmds = []
 		a.commands(cmds)
 		for c in cmds:
@@ -429,7 +433,8 @@ class ActionGen(Gen):
 def gen(dir, rext, dep):
 	"""Generate recipes to build res. A generation string is found between
 	file src and res. Each intermediate file has for name the kernel of res
-	(generated files will be put in the res directory). """
+	(generated files will be put in the res directory). Returns the list of
+	files to build (last file having rext as extension)."""
 	dir = common.Path(dir)
 	dep = common.Path(dep)
 	
@@ -447,15 +452,17 @@ def gen(dir, rext, dep):
 	prev = dep
 	
 	# end when dep is found
+	ress = []
 	while ext.ext <> rext:
 		gen = ext.gens[rext]
 		next = kern + gen.res.ext
 		gen.gen(next, prev)
+		ress.append(next)
 		prev = next
 		ext = gen.res
 
 	# return result
-	return prev
+	return ress
 
 
 def fix(path):
