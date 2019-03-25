@@ -225,13 +225,13 @@ def make_work(ctx = io.Context()):
 				if do_time:
 					b.show_time = True
 				b.build()
-				sys.exit(0)
+				os._exit(0)
 			except common.MaatError, e:
 				ctx.print_error(e)
-				sys.exit(1)
+				os._exit(1)
 			except KeyboardInterrupt, e:
 				ctx.print_error("action interrupted by user!")
-				sys.exit(2)
+				os._exit(2)
 
 
 old_except_hook = sys.excepthook

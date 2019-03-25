@@ -9,7 +9,8 @@ CFLAGS = "-g3"
 file("main.o").CC = "cc"
 file("main.o").CFLAGS = "-O2"
 
-c.program("main", ["main.c", "ok/ok.c", "lexer.l"], LIBS = ["m", "mylib"], RPATH = ["$ORIGIN"])
+c.program("main", ["main.c", "ok/ok.c", "lexer.l", "parser.y"], LIBS = ["m", "mylib"], RPATH = ["$ORIGIN"])
+file("parser.c").FLAGS = "-d"
 subdir("ko")
 subdir("lib")
 

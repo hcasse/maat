@@ -81,6 +81,8 @@ def check_sources(srcs):
 		config.register(CONFIG_CXX)
 	if contains(srcs, [".l"]):
 		config.register(CONFIG_LEX)
+	if contains(srcs, [".y"]):
+		config.register(CONFIG_YACC)
 	
 
 # commands
@@ -135,10 +137,12 @@ def comp_cxx_to_o(ress, deps):
 	return [ress[0].CXX, ress[0].CXXFLAGS, ress[0].CFLAGS, "-o", ress[0], "-c", deps[0], ress[0].ADDED_FLAGS]
 def comp_l_to_c(ress, deps):
 	return [
-		action.ShellAction([ress[0].LEX, deps[0] ]),
+		action.ShellAction([ress[0].LEX, ress[0].FLAGS, deps[0] ]),
 		action.Rename("lex.yy.c", ress[0])
 	]
-		
+def comp_y_to_c(ress, deps):
+	return [ress[0].YACC, ress[0].FLAGS, deps[0], "-o", ress[0]]	
+	
 
 gen_command(".o", ".c",  comp_c_to_o)
 gen_command(".o", ".cxx", comp_cxx_to_o)
@@ -147,6 +151,8 @@ gen_command(".o", ".c++", comp_cxx_to_o)
 gen_command(".o", ".C",   comp_cxx_to_o)
 gen_command(".o", ".cc",   comp_cxx_to_o)
 gen_action(".c", ".l", comp_l_to_c)
+gen_command(".c", ".y", comp_y_to_c)
+
 
 # Library Delegate
 class LibSolver(Delegate):

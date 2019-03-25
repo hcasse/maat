@@ -145,6 +145,12 @@ class Path:
 		else:
 			return iter([Path(p) for p in os.listdir(self.path)])
 
+	def makedir(self):
+		"""Build a directory corresponding to the current path. If needed,
+		creates intermediate directories. May raise OError."""
+		if self.path <> "" and not os.path.isdir(self.path):
+			os.makedirs(self.path)
+
 
 # Filters
 class Filter:

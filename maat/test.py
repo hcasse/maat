@@ -143,59 +143,66 @@ class OutputTest(Test):
 		self.perform(ctx)
 		#displayed = True
 		
-		# launch the command
-		if self.out:
-			maat.mkdir(str(self.out.parent()))
-			out_stream = open(str(self.out), "w")
-		else:
-			out_stream = NULL
-		if self.err:
-			maat.mkdir(str(self.err.parent()))
-			err_stream = open(str(self.err), "w")
-		else:
-			err_stream = NULL
-		if self.input:
-			in_stream = open(str(self.input), "r")
-		else:
-			in_stream = NULL
-		cmd = action.make_line(self.cmd)
-		if maat.verbose:
-			ctx.print_info("running %s" % cmd)
-		rc = subprocess.call(cmd, stdin = in_stream, stdout = out_stream, stderr = err_stream, shell = True)
-		if rc <> 0:
-			self.failure(ctx, "return code = %d, command = %s" % (rc, cmd))
-			return
+		try:
 			
-		# compare output if any
-		if self.out:
-			if not self.out_ref.exists():
-				self.info(ctx, "no reference file for output, creating it!")
-				maat.mkdir(str(self.out_ref.parent()))
-				shutil.copyfile(str(self.out), str(self.out_ref))
+			# launch the command
+			if self.out:
+				self.out.parent().makedir()
+				out_stream = open(str(self.out), "w")
 			else:
-				c = 0
-				for l in difflib.context_diff(open(str(self.out), "r").readlines(), open(str(self.out_ref), "r").readlines()):
-					c += 1
-				if c:
-					self.failure(ctx, "different output stream")
-					return
+				out_stream = NULL
+			if self.err:
+				self.err.parent().makedir()
+				err_stream = open(str(self.err), "w")
+			else:
+				err_stream = NULL
+			if self.input:
+				in_stream = open(str(self.input), "r")
+			else:
+				in_stream = NULL
+			cmd = action.make_line(self.cmd)
+			if maat.verbose:
+				ctx.print_info("running %s" % cmd)
+			rc = subprocess.call(cmd, stdin = in_stream, stdout = out_stream, stderr = err_stream, shell = True)
+			if rc <> 0:
+				self.failure(ctx, "return code = %d, command = %s" % (rc, cmd))
+				return
+				
+			# compare output if any
+			if self.out:
+				if not self.out_ref.exists():
+					self.info(ctx, "no reference file for output, creating it!")
+					maat.mkdir(str(self.out_ref.parent()))
+					shutil.copyfile(str(self.out), str(self.out_ref))
+				else:
+					c = 0
+					for l in difflib.context_diff(open(str(self.out), "r").readlines(), open(str(self.out_ref), "r").readlines()):
+						c += 1
+					if c:
+						self.failure(ctx, "different output stream")
+						return
+			
+			# compare error if any
+			if self.err:
+				if not os.path.exists(self.err_ref):
+					self.info(ctx, "no reference file for error, creating it!")
+					maat.mkdir(str(self.err_ref.parent()))
+					shutil.copyfile(self.err, self.err_ref)
+				else:
+					c = 0
+					for l in difflib.context_diff(open(self.err, "r").readlines(), open(self.err_ref, "r").readlines()):
+						c += 1
+					if c:
+						self.failure(ctx, "different error stream")
+						return
+				
+			# display result
+			self.success(ctx)
 		
-		# compare error if any
-		if self.err:
-			if not os.path.exists(self.err_ref):
-				self.info(ctx, "no reference file for error, creating it!")
-				maat.mkdir(str(self.err_ref.parent()))
-				shutil.copyfile(self.err, self.err_ref)
-			else:
-				c = 0
-				for l in difflib.context_diff(open(self.err, "r").readlines(), open(self.err_ref, "r").readlines()):
-					c += 1
-				if c:
-					self.failure(ctx, "different error stream")
-					return
-			
-		# display result
-		self.success(ctx)
+		except OSError as e:
+			self.failure(ctx, "test error: %s" % e)
+		except IOError as e:
+			self.failure(ctx, "test error: %s" % e)
 
 
 class CommandTest(Test):
@@ -222,13 +229,15 @@ class CommandTest(Test):
 			old_dir = os.getcwd()
 			os.chdir(self.dir)
 		if self.out:
-			maat.mkdir(str(self.out.parent()))
-			out_stream = open(str(self.out), "w")
+			out = common.Path(self.out)
+			maat.mkdir(str(out.parent()))
+			out_stream = open(str(out), "w")
 		else:
 			out_stream = NULL
 		if self.err:
-			maat.mkdir(str(self.err.parent()))
-			err_stream = open(str(self.err), "w")
+			err = common.Path(self.err)
+			maat.mkdir(str(err.parent()))
+			err_stream = open(str(err), "w")
 		else:
 			err_stream = NULL
 		if self.inp:
