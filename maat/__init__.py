@@ -479,6 +479,11 @@ def makedir(path):
 	return action.MakeDir(path)
 
 
+def actions(*actions):
+	"""Build a group of actions"""
+	return action.make_actions(actions)
+
+
 ###### rules using shortcuts #####
 
 def directory(name):

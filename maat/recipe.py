@@ -174,6 +174,9 @@ class File(env.MapEnv):
 		else:
 			return str(path)
 
+	def __repr__(self):
+		return self.__str__()
+
 
 def add_alias(file, name):
 	"""Add an alias for the given file with the given name."""

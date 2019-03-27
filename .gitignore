@@ -48,15 +48,35 @@ coverage.xml
 # Translations
 *.mo
 *.pot
+*.cmi
+*.cmo
+*.o
+*~
 
 # Django stuff:
 *.log
 
-# Sphinx documentation
+# Documentation
 docs/_build/
+autodoc
+doc/*.html
+doc/manual-imports
 
 # PyBuilder
 target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# tests
+**/.maat
+test/**/config.py
+test/doc
+test/ko/ko
+test/lexer.c
+test/maat
+test/main
+test/ocaml/prog
+test/parser.c
+test/parser.h
+test/site/

@@ -29,12 +29,12 @@ def list_goals(ctx = io.Context()):
 
 	l = [f for f in recipe.file_db.values() if f.is_goal and not f.is_hidden]
 	if l:
-		l.sort()
+		l = sorted(l, key = lambda f: f.name)
 		ll = max([len(str(f)) for f in l])
 		for f in l:
 			desc = f.get_here("DESCRIPTION")
 			if desc:
-				ctx.print_info("%s %s" % (str(f) + " " * (ll - len(f.name)), desc))
+				ctx.print_def(str(f) + " " * (ll - len(f.name) + 1), desc)
 			else:
 				ctx.print_info(str(f))
 

@@ -22,6 +22,7 @@ import env
 import lowlevel
 import os
 import re
+import recipe
 import select
 import shutil
 import subprocess
@@ -247,14 +248,14 @@ class Remove(Action):
 	ignore_error = None
 	
 	def __init__(self, args, ignore_error = False):
-		self.paths = [common.Path(arg) for arg in args]
+		self.paths = recipe.get_files(args)
 		self.ignore_error = ignore_error
 	
 	def execute(self, ctx):	
 		for p in self.paths:
 			try:
-				ctx.print_command("remove %s" % p)
-				if p.is_dir():
+				ctx.print_command("remove '%s'" % p)
+				if p.actual().is_dir():
 					shutil.rmtree(str(p))
 				else:
 					os.remove(str(p))	
@@ -372,6 +373,7 @@ class MakeDir(Action):
 		self.path = path
 		
 	def execute(self, ctx):
+		ctx.print_command("makedir '%s'" % self.path)
 		lowlevel.makedir(self.path)
 	
 	def commands(self, cmds):

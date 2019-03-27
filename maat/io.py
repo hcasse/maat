@@ -101,6 +101,12 @@ class Context:
 			self.handle_action()
 			sys.stdout.write(BOLD + BLUE + str(info) + NORMAL + "\n")
 
+	def print_def(self, term, desc):
+		"""Print a definition made of term and a description."""
+		if not self.quiet and self.info_ena:
+			self.handle_action()
+			sys.stdout.write(BOLD + BLUE + str(term) + NORMAL + desc + "\n")		
+
 	def print_error(self, msg):
 		"""Print an error message."""
 		if not self.complete_quiet:
@@ -147,5 +153,6 @@ class Context:
 		if msg:
 			msg = "(%s) " % msg
 		self.print_action_final(msg + RED + BOLD + "[FAILED]" + NORMAL)
+
 
 DEF = Context()

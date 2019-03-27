@@ -30,6 +30,7 @@ import subprocess
 import sys
 
 TEST_CASES = []
+BEFORE_TEST = []
 NULL = open(os.devnull, "w")
 
 class Case(recipe.Recipe):
@@ -47,6 +48,7 @@ class Case(recipe.Recipe):
 		if not private:
 			global TEST_CASES
 			TEST_CASES.append(self.ress[0])
+		self.ress[0].DESCRIPTION = "test case"
 
 	def add(self, test):
 		self.tests.append(test)
@@ -61,7 +63,7 @@ class Case(recipe.Recipe):
 		if self.succeeded == len(self.tests):
 			ctx.out.write(io.BOLD + io.GREEN + "\tSUCCESS: all tests passed!\n" + io.NORMAL)
 		else:
-			ctx.out.write(io.BOLD + io.RED + "\tFAILURE: %d tests failed on %d\n" % (len(self.tests) - self.succeeded, len(self.tests)) + io.NORMAL)
+			ctx.out.write(io.BOLD + io.RED + "\tFAILURE: %d test(s) failed on %d\n" % (len(self.tests) - self.succeeded, len(self.tests)) + io.NORMAL)
 			common.error("Test failed.")
 
 
@@ -80,27 +82,21 @@ class Test(recipe.Recipe):
 		self.case = case
 		case.add(self)
 		self.ress[0].set_goal()
+		self.ress[0].DESCRIPTION = "test"
 
 	def success(self, ctx):
 		"""Record the current test as a success and display
 		ok message."""
-		if not self.displayed:
-			self.perform(ctx)
 		self.case.succeeded += 1
-		ctx.out.write(io.GREEN + "[OK]" + io.NORMAL + "\n")
+		ctx.print_action_success()
 	
 	def failure(self, ctx, msg = ""):
 		"""Record the current test as a failure display message."""
-		if not self.displayed:
-			self.perform(ctx)
-		ctx.out.write(io.RED + "[FAILED]\n" + io.NORMAL)
-		if msg:
-			ctx.out.write(msg  + "\n")
+		ctx.print_action_failure(msg)
 	
 	def perform(self, ctx):
 		"""Display message of a starting test."""
-		ctx.out.write("\tTesting %s%s\t" % (self.name, ' ' * (self.case.longer - len(self.name))))
-		ctx.out.flush()
+		ctx.print_action("\tTesting %s%s " % (self.name, ' ' * (self.case.longer - len(self.name))))
 		self.displayed = True
 	
 	def info(self, ctx, msg):
@@ -162,7 +158,7 @@ class OutputTest(Test):
 				in_stream = NULL
 			cmd = action.make_line(self.cmd)
 			if maat.verbose:
-				ctx.print_info("running %s" % cmd)
+				ctx.print_info("running '%s'" % cmd)
 			rc = subprocess.call(cmd, stdin = in_stream, stdout = out_stream, stderr = err_stream, shell = True)
 			if rc <> 0:
 				self.failure(ctx, "return code = %d, command = %s" % (rc, cmd))
@@ -227,7 +223,10 @@ class CommandTest(Test):
 		self.perform(ctx)
 		if self.dir <> None:
 			old_dir = os.getcwd()
-			os.chdir(self.dir)
+			try:
+				os.chdir(self.dir)
+			except OSError as e:
+				raise common.MaatError("cannot change to '%s': %s" % (self.dir, e))
 		if self.out:
 			out = common.Path(self.out)
 			maat.mkdir(str(out.parent()))
@@ -283,11 +282,16 @@ def output(case, name, cmd, out = None, out_ref = None, err = None, err_ref = No
 	"""Build a test that launches a command compares output."""
 	return OutputTest(case, name, cmd, out, out_ref, err, err_ref, input, deps)
 
+def before(*actions):
+	"""Add an action to actions performed before test."""
+	BEFORE_TEST.append(action.make_actions(*actions))
+
 def post_init():
 	"""Initialize the test goal."""
 	path = env.cenv.path / "test"
 	if not recipe.file_db.has_key(path):
-		maat.goal("test", TEST_CASES)
-
+		before_test = recipe.phony("before-test", [], action.make_actions(BEFORE_TEST))
+		test = maat.goal("test", [before_test] + TEST_CASES)
+		test.DESCRIPTION = "run tests"
 
 maat.post_inits.append(maat.FunDelegate(post_init))
