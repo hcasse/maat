@@ -416,7 +416,7 @@ def suffix(p):
 
 def path(p):
 	"""Convert simple string to Maat path."""
-	if p == None or p is common.Path:
+	if p == None or isinstance(p, common.Path):
 		return p
 	else:
 		return common.Path(str(p))

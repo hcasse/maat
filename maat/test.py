@@ -73,7 +73,6 @@ class Test(recipe.Recipe):
 	of test case."""
 	case = None
 	name = None
-	displayed = False
 	
 	def __init__(self, case, name, deps):
 		recipe.Recipe.__init__(self, [name], deps)
@@ -97,14 +96,10 @@ class Test(recipe.Recipe):
 	def perform(self, ctx):
 		"""Display message of a starting test."""
 		ctx.print_action("\tTesting %s%s " % (self.name, ' ' * (self.case.longer - len(self.name))))
-		self.displayed = True
 	
 	def info(self, ctx, msg):
 		"""Display an information."""
-		if self.displayed:
-			ctx.out.write("\n")
-			self.displayed = False
-		ctx.out.write("\t%s\n" % msg)
+		ctx.print_info("\t\t%s" % msg)
 	
 	def test(self, ctx):
 		"""This method is called to perform the test."""
@@ -180,13 +175,13 @@ class OutputTest(Test):
 			
 			# compare error if any
 			if self.err:
-				if not os.path.exists(self.err_ref):
+				if not self.err_ref.exists():
 					self.info(ctx, "no reference file for error, creating it!")
 					maat.mkdir(str(self.err_ref.parent()))
-					shutil.copyfile(self.err, self.err_ref)
+					shutil.copyfile(str(self.err), str(self.err_ref))
 				else:
 					c = 0
-					for l in difflib.context_diff(open(self.err, "r").readlines(), open(self.err_ref, "r").readlines()):
+					for l in difflib.context_diff(open(str(self.err), "r").readlines(), open(str(self.err_ref), "r").readlines()):
 						c += 1
 					if c:
 						self.failure(ctx, "different error stream")
