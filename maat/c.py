@@ -71,7 +71,7 @@ def contains(files, suffs):
 		
 
 def is_cxx(deps):
-	return contains([dep.recipe.deps[0] for dep in deps if dep.recipe], cpp_ext)
+	return contains(deps, cpp_ext)
 
 def check_sources(srcs):
 	"""Check if sources contain C++ files or C file and select configuration accordingly."""
@@ -110,7 +110,7 @@ class Linker(action.Action):
 	
 	def command(self):
 		if self.is_cxx:
-			cc = [self.prog.CC, self.prog.CXXFLAGS]
+			cc = [self.prog.CXX, self.prog.CXXFLAGS]
 		else:
 			cc = self.prog.CC
 		return [cc, self.prog.CFLAGS, "-o", self.prog, self.objs, self.prog.LDFLAGS, self.added()]

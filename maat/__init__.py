@@ -237,8 +237,11 @@ def make_work(ctx = io.Context()):
 old_except_hook = sys.excepthook
 def on_except(t, v, tb):
 	common.script_failed = True
-	old_except_hook(t, v, tb)
-	io.Context().print_error("in script (see above)")
+	if issubclass(t, common.MaatError):
+		io.Context().print_error(str(v))
+	else:
+		old_except_hook(t, v, tb)
+		io.Context().print_error("in script (see above)")
 sys.excepthook = on_except
 
 def make_at_exit():
