@@ -19,6 +19,7 @@ the recipes."""
 
 import common
 import env
+import io
 import lowlevel
 import os
 import re
@@ -42,10 +43,14 @@ def make_line(args):
 			line = line + " " + str(a)
 	return line
 
-def invoke(cmd, ctx):
+def invoke(cmd, ctx, out = None, err = None):
 	"""Launch the given command in the current shell."""
 	if  cmd == "None":
 		cmd()
+	if out == None:
+		out = ctx.out
+	if err == None:
+		err = ctx.err
 
 	# print command
 	line = make_line(cmd)
@@ -55,7 +60,7 @@ def invoke(cmd, ctx):
 	proc = subprocess.Popen(line, shell=True, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 	
 	# prepare handling if out, err
-	map = { proc.stdout: ctx.out, proc.stderr: ctx.err }
+	map = { proc.stdout: out, proc.stderr: err }
 	ins = [proc.stdout, proc.stderr]
 	while ins:
 		useds, x, y = select.select(ins, [], [])
@@ -71,6 +76,26 @@ def invoke(cmd, ctx):
 	if r <> 0:
 		common.error("build failed")
 
+class StreamCollector:
+	
+	def __init__(self):
+		self.buf = ""
+	
+	def write(self, txt):
+		if txt and txt[-1] == '\n':
+			self.buf = self.buf + txt[:-1] + " "
+		else:
+			self.buf = self.buf + " "
+
+
+def output(*cmd):
+	"""Collect the output of a command call."""
+	io.DEF.quiet = True
+	out = StreamCollector()
+	invoke(cmd, io.DEF, out)
+	io.DEF.quiet = False
+	return out.buf
+	
 
 class Action:
 	"""Base class of all actions."""

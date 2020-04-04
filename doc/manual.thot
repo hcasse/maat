@@ -452,7 +452,12 @@ Resources to examine files includes:
   * ''listdir''(//path//) -- build a list as the content of //path// directory.
   * ''path''(//path//) -- convert string to path.
   * ''suffix''(//path//) -- get extension of the file designed by the path.
+  * ''temp''([//name//]) -- obtain a temporary directory (based on the given name if any).
 
+
+===== Other Primitives =====
+
+  * ''which''(//command//) -- look for the full path of //command// in the system path (returns ''None'' if not found); 
 
 ===== Goals and Rules =====
 

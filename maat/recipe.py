@@ -226,7 +226,7 @@ def get_files(paths):
 	if paths == None:
 		return []
 	if not isinstance(paths, list):
-		paths = [ paths ]
+		paths = [ get_file(paths) ]
 	r = []
 	for p in paths:
 		if not isinstance(p, File):
@@ -449,8 +449,8 @@ def gen(dir, rext, dep):
 
 	# initialize lookup process
 	if not ext_db.has_key(dext):
-		io.DEF.print_error("don't know how to build '%s' from '%s'" % (rext, dep))
-		exit(1)
+		common.script_error("don't know how to build '%s' from '%s'" % (rext, dep))
+		#raise Common.MaatError("DEBUG:")
 	ext = ext_db[dext]
 	prev = dep
 	

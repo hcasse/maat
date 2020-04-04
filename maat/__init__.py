@@ -439,7 +439,12 @@ def temp(name = None):
 def which(prog):
 	"""Look for a program in the system PATH."""
 	return common.lookup_prog([prog], os.getenv("PATH").split(":"));
-	
+
+
+def output(*cmd):
+	"""Return the output of a command call."""
+	return action.output(*cmd)
+
 
 ######## compatibility functions ##########
 

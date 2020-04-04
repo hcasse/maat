@@ -60,9 +60,11 @@ def save(ctx = io.DEF):
 	
 	# nothing to do
 	if not update:
+		#print "DEBUG: no need to save signs"
 		return
 	
 	# save the file
+	#print "DEBUG: saving signs %s" % signs
 	p = m.temp() / "signs"
 	try:
 		f = open(str(p), "wb")
@@ -75,6 +77,7 @@ def test(file):
 	"""Test if a signature is ok. Return true if it is ok, false else."""
 	global signs
 	global update
+	#print "DEBUG: %s" % signs
 
 	# no recipe: no need for signature
 	if not file.recipe:
@@ -85,7 +88,8 @@ def test(file):
 		# test the signature
 		s = file.recipe.signature()
 		k = str(file)
-		if signs[k] == s:
+		ss = signs[str(file)]
+		if s == ss:
 			return True
 
 		# signature does not match
@@ -96,13 +100,14 @@ def test(file):
 	# no signature available
 	except KeyError, e:
 		#print "DEBUG: %s has no signature!" % k
-		signs[k] = s
-		update = True
 		return False
 
 
 def record(file):
 	"""Record the signature for making the given file."""
+	global signs
+	global update
+	
 	if file.recipe == None:
 		return
 	k = str(file)

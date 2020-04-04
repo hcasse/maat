@@ -173,15 +173,19 @@ class SeqBuilder(Builder):
 			self.ctx.print_action_final("(%s)" % common.format_duration(job.duration()))
 
 	def build(self):
-		job = self.next()
-		while job:
-			self.build_job(job)
+		try:
 			job = self.next()
-		if self.show_time:
-			self.ctx.print_success("all is fine (%s)!" % common.format_duration(self.total_time));
-		else:
-			self.ctx.print_success("all is fine!");
-		sign.save(self.ctx)
+			while job:
+				self.build_job(job)
+				job = self.next()
+			if self.show_time:
+				self.ctx.print_success("all is fine (%s)!" % common.format_duration(self.total_time));
+			else:
+				self.ctx.print_success("all is fine!");
+			sign.save(self.ctx)
+		except common.MaatError as e:
+			sign.save(self.ctx)
+			raise e
 
 
 class ParBuilder(Builder):

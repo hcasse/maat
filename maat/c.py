@@ -193,15 +193,21 @@ class LibSolver(Delegate):
 def parse_dep(path):
 	try:
 		f = open(str(path), "r")
+		buf = ""
 		for l in f.xreadlines():
-			p = l.find(":")
+			buf = buf + l
+			if buf[-2:] == "\\\n":
+				buf = buf[:-2]
+				continue
+			p = buf.find(":")
 			if p >= 0:
-				ts = [file(t) for t in l[:p].split()]
-				ds = [file(d) for d in l[p+1:-1].split()]
+				ts = [file(t) for t in buf[:p].split()]
+				ds = [file(d) for d in buf[p+1:-1].split()]
 				for t in ts:
 					if t.recipe:
 						for d in ds:
 							t.recipe.add_dep(d)
+			buf = ""
 	except IOError, e:
 		pass
 
@@ -251,7 +257,7 @@ LIBS = None, RPATH = None, INSTALL_TO = ""):
 	recipe.add_alias(prog, name)
 
 	# build objects
-	sources = [file(s) for s in sources]
+	sources = recipe.get_files(sources)
 	objs = make_objects(prog.path.parent(), sources, CFLAGS, CXXFLAGS)
 	
 	# build program
