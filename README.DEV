@@ -1,0 +1,137 @@
+
+====== To Do ======
+
+===== Command =====
+
+[ ] add option to call configuration program and get back result in variables
+[ ] add special file names to design shortly source and targets
+[ ] add option to dump selected variables
+[ ] add -j, --jobs N for parallel compilation
+[ ] add -b, --brief for brief output (work bar + currently processed file)
+[X] add option to embed Maat in the current projet (making easier broadcasting of Maat)
+[X] add -q, --question with return code equal to 0 if not update is needed
+[X] add -B, --always-make to (re)build all!
+[X] add -s, --silent, --quiet for not output
+[X] add -t, --time option to show compilation time
+[X] add option for dry run
+[X] add option to dump recipe database
+[X] add option to list goals
+
+
+===== Engine =====
+
+[ ] support invocation from non-top make.py
+[ ] add goal to build a distribution (source, binary, etc)
+[ ] add automatic download of dependencies (from OS or from network)
+[ ] add file update resolution based on file content
+[X] add command to support file generation from variable content
+[X] add building modes
+[X] display percentage of build for each action
+[X] Path are now iterable if they are directories and return their content. 
+[X] add goal to perform installation
+[X] add file update resolution based on command matching
+[X] add overload for "." to environment
+[X] add map for symbolic names (program, library, etc)
+[X] add support for building in a different directory
+[X]	add "[", "]" syntax to environment
+[ ] provide commands for rule as writing shell commands (???)
+
+===== Actions =====
+
+[ ] add mode (error, warning, fatal, ...) to show command.
+[ ] supports lambdas as action
+[X] add makefile() command to create a file containing the given content.
+
+
+===== Documentation =====
+
+[ ] build a website
+[X] add documentation for use of file attributes and explaining environment resolution
+
+
+===== Config Module =====
+
+[X] add function to retrieve libraries
+[ ] add cygwin identification
+[ ] add MacOSX identification
+[ ] add OS variable to get unique identifier of OS for binary identification
+
+
+===== Test Module =====
+
+[X] document it
+
+
+===== C Module =====
+
+[ ] add support for lex
+[ ] add support for yacc
+[ ] add support for LLVM
+[ ] add support for VS
+[X] add support for automatic dependencies (from compiler)
+[X] add support for dynamic libraries / plugin / module
+[X] add dependency analysis
+[X] add support for static libraries
+[X] add support for ".exe" files
+[X] document it
+
+
+===== Install Module =====
+
+[ ] supports string as a regular expression in filters
+[ ] make the installation process dependent on the current OS
+
+
+===== New Modules =====
+
+[ ] Java support
+[ ] OCAML support
+[ ] Python support
+[ ] Ada support
+[ ] integrate a packaging system (allowing retrieval and automatically dependency build)
+
+
+===== Configuration =====
+
+[X] Add dependency system between configurations.
+
+
+====== Internal Work ======
+
+
+===== Generic Rules =====
+
+Generic rules allows to infer string of rules between a result suffix
+''.res'' and a depenedency suffix ''.dep''. The generic rules are implemented
+in the ''recipe'' module.
+
+To implement this, a kind of graph,
+more exactly a first a forest of tree is maintained.
+The node of the graph are the extensions, class ''Ext'', and the edges
+are the generators, class ''Gen''. The edge can be crawled forward
+(''ext'' array) and backward (''backs'' array). All the nodes are stored
+in the map ''ext_db'', associating the extension as a string to the
+extension as an object of class ''Ext''.
+
+The ''gens'' map in ''Ext'' associates the current extension as source
+to any target extension for which a generic rules exists. If the ''gens''
+map of ''.dep'' contains a generation for ''.res'' (different of //None//),
+then the ''.dep'' can be translated to the ''.ress'' file.
+
+In fact, the obtained graph is transitively closed: if there is a rule
+to translate ''.a'' to ''.b'' and a rule to translate ''.b'' to ''.c''
+then there is an entry ''.c'' in ''.b'' ''gens'' array (straight)
+but also an entry ''.c''' in ''.a'' ''gens'' array (transitive).
+The overall result is that it is very quick to know if it is possible
+to test if there is some translation string from ''.a'' to ''.b''.
+''.b'' must in the ''gens'' map of ''.a''. As a second result, it is
+easy to compute the translation string from ''.a'' to ''.b'': starting
+at ''.a'', one has to follow the generation rules and extensions by
+accessing the ''.b'' entry in ''gens'' maps.
+ 
+
+
+
+
+
+

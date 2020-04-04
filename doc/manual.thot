@@ -1,0 +1,997 @@
+@use dokuwiki
+@TITLE=Maat Manual
+@AUTHORS=H. Cassé <hugues.casse@laposte.net>
+@VERSION=0.1
+@LANG=en_EN
+
+@MAAT=**//Maat//**
+
+====== Introduction ======
+
+===== Disclaimer =====
+
+@(MAAT) is the result of my frustration in the use of GNU Make,
+CMake and AutoTools. There are lots of alternatives tools (particularly
+for GNU Make) like Scons, AAP, Ant, etc but they don't maintain
+the nice principle of recipes (also known as rules).
+
+A recipe is formed of three components:
+  * the target files that is produced by the recipe,
+  * the dependency files that the targets is using,
+  * the action that performs the build of the target from the dependencies.
+
+The concept is very simple: if the targets are older than the dependencies,
+the action is executed and must build the target files using the dependency files.
+Such a simple concept is very beautiful because it's enough to represent most building process of most applications including executables, static and dynamic libraries and anything that is the transformation of a set of files to a set of files. But most alternatives to GNU Make dropped such a treasure.
+
+Yet, GNU Make (and its ancestors) has two main drawbacks:
+  * inefficient solving process of generic recipes causing combinatorial explosion of file lookup,
+  * inadequate script layer that makes the task of building automatically recipes exceedingly hard and non-modular with complex scripts or big applications.
+
+@(MAAT) try to solve both problems while keeping the concept of generic recipes.
+The first issue is solved by reducing the domain of lookup for automatic recipes:
+only dependency strings between a source file and its final object are considered.
+The second issue is simply achieved using Python as the script system.
+Fortunately, Python alone is not enough and @(MAAT) provides lots of common facilities to create and control recipes.
+
+Concerning building systems like CMake or AutoTools, the integration inside
+@(MAAT) comes from the easy statement that there is no reason to separate
+building configuration and building itself. Moreover, the building scripts,
+where programs and sources are defined, have a better knowledge of what is
+done and therefore can identify which are the requirements for building
+the application.
+
+{{Selanit-Maat-800px.png?150 }}
+**Maat** or **Ma'at** was the ancient Egyptian concept of truth, balance, order, harmony, law, morality, and justice. Maat was also personified as a goddess regulating the stars, seasons, and the actions of both mortals and the deities, who set the order of the universe from chaos at the moment of creation. 
+
+Excerpt from [[https://en.wikipedia.org/wiki/Maat|Wikipedia]].
+
+@(MAAT) is delivered under [[http://www.gnu.org/licenses/gpl.html|GPL v3]]
+license and copyrighted by H. Cassé <hugues.casse@irit.fr>.
+
+
+===== Features =====
+
+  * Python-based scripting -- benefit from the power of an existing
+programming language and extension of Python symbol resolution
+to reflect environment stack.
+  * C/C++ ready module.
+  * File updating based on date and on command line signature.
+  * Automatic configuration system.
+  * Configuration customizable by hand.
+  * Readable display of the make process.
+  * Fast resolution of automatic dependencies.
+  * Full support for target/dependencies/action abstraction allowing
+write of custom rules.
+  * Basic OS independent file operation primitives.
+  * Support for specific build directory.
+  * Non-intrusive tool file management.
+  * Automatic handling of basic goals: all, clean, distclean, etc.
+  * Very fast learning curve for Python programmers.
+  * Fast learning curve for non-Python programmers.
+  * Test module for fast and easy testing.
+  * Composability of scripts for free (thanks to Python).
+
+
+===== To do =====
+
+A lot of work needs to be done before @(MAAT) reaches the power of
+Autotools or CMake. The future development encompasses:
+  * parallel build,
+  * flex and bison support in C module,
+  * OCAML support,
+  * Ada support,
+  * Java support,
+  * Python support,
+  * automatic packaging of the application/library.
+
+
+===== FAQ =====
+
+**Why is @(MAAT) faster than GNU Make with implicit rules?**
+
+The main issue with GNU Make and implicit rules is that it has to explore
+the whole set of derivations between any involved file and any
+possible source of it and the complexity of this work depends on the
+number of files and of explicit rules.
+
+@(MAAT) supports a form of implicit rule but the lookup is only
+performed on the request of a particular rule and this request is
+always based on the bottom-level source file and designs a particular
+type of target file.
+
+For example, the ''c.program'' rule can take different types of sources
+(''.c'', ''.cpp'', ''.l'', etc). If  a source is a ''.l'' ,
+''c.program'' will ask for a ''.o'' corresponding to its sources.
+If these sources includes a file named ''lexer.l'', @(MAAT) will
+only look on the implicit paths starting at ''.l'' and ending by ''.o''.
+It is equivalent to traverse a small graph and the found path will be:
+  * make ''.c'' from ''.l'',
+  * make ''.o'' from ''.c'.
+
+**Why sticking to the source/dependency/action abstraction?**
+
+Some build system (like ant) have give up the source/dependency/action
+abstraction. This usually means that the build process is described as
+a list of actions but the products of the compilation often are
+interdependent. This requires, in turn, that the dependencies have to be expressed
+in a different way but they are still here.
+
+Second, an abstraction is a good thing: the developers don't need to be
+bothered with the order and the details of the compilation; this is the
+task of the build system and the source/dependency/action abstraction is
+easy to understand.
+
+Third, the source/dependency/action abstraction is also easy to extend.
+Some compilation methods are missing or the developer needs to add its
+own goal: it is quite easy to express it with this abstraction and
+to link it with other goals.
+
+
+====== Writing Scripts ======
+
+===== Hello, World! =====
+
+Let's start with the very classic "Hello, World" example. With your
+preferred editor, create a file named ''hello.c'' and enter its content:
+
+<code c>
+#include <stdio.h>
+
+int main(void) {
+	puts("Hello, World!");
+	return 0;
+}
+</code>
+
+Our goal is to generate an executable for our program. With @(MAAT),
+just create a new file named ''make.py'' with the following content:
+
+<code py>
+from maat import *
+from maat import c
+
+c.program("hello", ["hello.c"])
+</code>
+
+To launch the building of the program, just type:
+<code sh>
+> python make.py
+</code>
+
+The following output will appear meaning that the building is successful:
+<code>
+ cc  -o hello.o -c hello.c
+ cc  -o hello hello.o 
+</code>
+
+As no error is displayed, the compilation is successful and you can test your first program:
+<code>
+>./hello
+Hello, World!
+</code>
+
+Now, you can modify your source ''hello.c'' or add new source file to your program,
+you have just to invoke ''python make.py'' to get your program re-compiled and,
+of course, only the modified sources are re-compiled. But you make things
+a bit more automatic. Add as first line of ''make.py'':
+
+<code py>
+#!/usr/bin/python
+</code>
+
+And make this file executable:
+<code>
+chmod +x make.py
+</code>
+
+Then, the make process is simply restarted by:
+<code sh>
+> ./make.py
+</code>
+
+
+===== Goals =====
+
+Previous section has exposed how @(MAAT) is able to build C program.
+This is a default behaviour but, in the standard configuration, @(MAAT)
+can perform several tasks, also named //goals//:
+  * ''all'' is the default applied goal and build what is required,
+  * ''clean'' removes all temporaries files like object files,
+  * ''config'' builds the configuration,
+  * ''distclean'' removes all produced files, i.e., object and executable files,
+  * ''install'' performs the installation of files in the system, i.e. installation of ''hello'' in ''/usr/bin''.
+
+To invoke a specific goal, just pass it as an argument in the command line:
+<code sh>
+> ./make.py clean
+</code>
+
+@(MAAT) represents the building process of an application as set of rules
+made of three components (//targets//, //dependencies//, //actions//).
+A rule means that, to build the //targets// files, we need first
+the //dependencies// file and that the action //actions// (usually shell commands)
+have to be performed. This allows creating a hierarchy between the different
+actions to build the program and to only construct targets whose dependencies
+changed.
+
+The ''all'' goal belongs in fact to a rule whose dependencies are the set
+of program to build. There is no action. When the ''all'' goal is invoked,
+automatically all its dependencies, the programs, are built. But you may
+also ask for the building of a program by specifying in the command line:
+<code sh>
+> ./make.py hello
+</code> 
+
+
+
+===== Selecting a different build directory =====
+
+Variable ''BPATH'' is used to select in which directory to build files.
+As a default, the build path is the top-level directory (containing the
+main script). To change the build directory, one has to reconfigure
+the project with a command like:
+<code bash>
+> ./make.py config BPATH=BUILD_DIRECTORY
+</code>
+
+And to replace //BUILD_DIRECTORY// by the absolute or the relative path
+to the build directory.
+
+Another way to customize the build directory after configuration
+is to edit the file ''config.py'' and to add a line like:
+<code python>
+BPATH = "BUILD_DIRECTORY"
+</code>
+
+
+====== Environment Management ======
+
+@(MAAT) work is based on the concept of environment: basically, an environment
+is map associating symbols or identifier with values, this association
+is called a variable. The values may
+be any Python value but are usually strings or list of strings: this comes
+from the fact that most actions are translated to calls to line commands.
+
+In @(MAAT), all objects are environments: files, script, etc. In addition,
+the environment are stacked: each environment has as parent environment
+the one where it is created. For files, the parent environment is the one
+of the script using the file. This stack is used to resolve variables
+from the higher environment to the lower one in the stack. Therefore,
+the script behaviour or variables are determined by the stack of script
+including it providing a modular flavour to @(MAAT). The lowest environment
+is the OS variable environment meaning that the configuration may be
+provided by defining variable in your preferred shell.
+
+To define a variable in your script environment is as easy as defined
+a variable in a Python program:
+<code python>
+CC="my_c_compiler"
+</code>
+
+Unfortunately, accessing the environment stack is not as easy.
+The code below:
+<code python>
+print "my compiler is %s" % CC
+</code>
+Will only resolve ''CC'' in the current environment (as usually in Python).
+To use the stack of environment, you have to type:
+<code python>
+print "my compiler is %s" % curenv.CC
+</code>
+
+To define the variable in the environment of a specific file, you can
+use the ''file''() function:
+<code python>
+file("my_file.c").CFLAGS = "-O2"
+</code>
+
+Finally, @(MAAT) provide explicit access to some environment information:
+  * curenv -- current environment,
+  * envstack -- stack of environment as a sequence.
+
+If you use the ''env'' module:
+<code python>
+import maat.env as env
+</code>
+
+The following environment are available:
+  * ''env.os'' -- environment representing OS variables,
+  * ''env.root'' -- environment containing built-in definitions,
+  * ''env.conf'' -- environment containing the configuration,
+  * ''env.top'' -- environment of the top-level script,
+  * ''env.curenv'' -- current environment.
+
+
+====== Configuration Module ======
+
+===== Description =====
+
+The configuration module builds a file named ''config.py'' that is included
+in the make process. It contains configuration items depending on the current
+host about executable paths, library paths or anything that may be variable
+between OS or any configuration item used to tune the compilation of a
+project.
+
+Most modules provided with @(MAAT) will provide their own configuration
+item according to their needs. For example, if you use the ''c.program''
+command of ''maat.c'' module, the configuration item to detect a C compiler
+will be added. Yet, the use of configuration is not mandatory for most module:
+if the configuration is not provided, the module will fall back to default
+usual values.
+
+In the opposite, if you want to use a configuration, you have just ask for
+building the ''config.py'' file:
+<code bash>
+> ./make.py config
+</code>
+
+This command will display a summary of the performed test and of the obtained
+results as below (from the ''test'' directory of the @(MAAT) distribution):
+<code>
+library linker ... (found: ar) [0K]
+C compiler ... (found: gcc) [0K]
+</code>
+
+Notice that if you run again the configuration command, only unresolved
+configuration will re-tested. This shorten the configuration time but,
+more importantly, this let you tuning the configuration file. Indeed,
+at any moment, you can edit ''config.py'' and change the configuration
+of most available item (for example, to change the C compiler with
+your preferred one or to provide by hand a configuration not automatically
+resolved). Whatever the modification you perform on ''config.py'' file,
+it will be preserved even if several ''./make.py config'' are performed
+((However, even if ''config.py'' is plain Python code, @(MAAT) is only
+able to regenerate simple literal values: any other code put inside
+''config.py'' will be lost at next ''config'' invocation.)).
+ 
+The ''config.py'' generated above will look like this:
+<code python>
+# generated by Maat
+# You're ALLOWED modifying this file to tune or complete your configuration
+CC = 'gcc'
+AR = 'ar'
+IS_WINDOWS = False
+IS_UNIX = True
+ELF_HOST = 'Linux ares 3.16.0-38-generic x86_64'
+</code>
+
+
+===== Customizing the Configuration =====
+
+Although the configuration module is very new, it provides already
+some facilities to let your ''make.py'' look up for configuration.
+
+First, you have to import the module:
+<code python>
+from maat import config
+</code>
+
+Now, the following function is available:
+
+**''config.find_program''**(//label//, //var//, //progs//, //paths//,
+//syspath//, //sysfirst//)
+
+Look for a specific program whose name is taken from the list //progs//
+in the list of //paths// and in the system paths if //syspath// is true
+(default). The order is important in //paths// and system path is important
+and the //paths// are looked first. To change this behaviour, one has
+to set //sysfirst// to true.
+
+Once the program is found, its path is recorded in //var// variable.
+//label// is used to inform the user about lookup.
+
+Example:
+<code python>
+config.find_program("Brower", BROWSER, ["firefox", "opera", "galeon"])
+</code>
+
+
+===== Internal Work =====
+
+The configuration is based on object of type config.Config(). These
+objects are initialized with the label of the configuration, a//blocking//
+parameter informing if the whole configuration must fail if the lookup fails
+and a list of dependent configurations. The current configuration will
+only be tested if all dependencies are resolved.
+
+To customize this class, one has to override the method ''configure''(c)
+and ''done''(). The latter is used to check if the configuration is
+already available in ''config.py'': in this case, it will not be tested.
+
+''configure''(c) is called when the configuration test needs to be performed.
+The parameter ''c'' is a display context that must be used to perform
+input / output. As a result, the ''configure''() must be perform either
+a call to ''self.fail''(), or to ''self.succeed''(). Both functions
+takes as additional parameter, a message to display.
+
+The example below shows a configuration testing if the compiler is GCC:
+<code python>
+class IsGCC(config.Config):
+
+	def __init__(self, blocking = False):
+		config.Config.__init__(self, blocking, [maat.c.CONFIG_CC])
+	
+	def done(self):
+		return env.conf.IS_GCC
+	
+	def configure(self, c):
+		s = maat.action.dump([env.conf.CC, "--version"])
+		if s and s.startswith("gcc "):
+			env.conf.IS_GCC = True
+</code>
+
+
+
+====== Basic Commands and Rules ======
+
+@(MAAT) Python package provides basic command and rules that
+help the writing of scripts.
+
+===== Environment Management =====
+
+  * ''append''(//id//, //v//) -- append a value to an existing one.
+  * ''curenv'' -- current environment (of the current script).
+  * ''defined''(//id//) -- test if the identifier //id// is defined.
+  * ''envstack'' -- stack of environment.
+  * ''curdir'' -- current directory (of the current script).
+  * ''get''(//id// [, //def//]) -- get a value of current environment.
+  * ''pop_env''() -- pop the current environment.
+  * ''push_env''(environment) -- push a new environment.
+  * ''set''(//id//, //v//) -- set a variable in the current environment.
+  * ''subdir''(//dir//) -- process script file of the given directory.
+
+
+===== File Management =====
+
+Resources to examine files includes:
+  * ''file''(//path//) -- get @(MAAT) file matching the given path.
+  * ''glob''(//RE//) -- select file list using the given path regular expression.
+  * ''isdir''(//path//) -- test if given path designs a directory.
+  * ''join''(//p1//, //p2//) -- join two paths according OS rules.
+  * ''listdir''(//path//) -- build a list as the content of //path// directory.
+  * ''path''(//path//) -- convert string to path.
+  * ''suffix''(//path//) -- get extension of the file designed by the path.
+  * ''temp''([//name//]) -- obtain a temporary directory (based on the given name if any).
+
+
+===== Other Primitives =====
+
+  * ''which''(//command//) -- look for the full path of //command// in the system path (returns ''None'' if not found); 
+
+===== Goals and Rules =====
+
+The following commands may be used to manage goals and rules:
+  * ''phony''(//goal//, //deps//, //actions//) -- build a new phony (not matching an actual file).
+  * ''goal''(//goal//, //deps//, //actions//) -- build a phony rule that will be displayed with ''-l'' option.
+  * ''rule''(//ress//, //deps//, //actions//) -- build a specific rule for a particular file.
+
+Basically, writing a rule is as simple as writing:
+<code python>
+rule(target_file, source_files, actions)
+</code>
+With:
+  * //target_file// -- path of the file to build,
+  * //source_files// -- either a source file path, or a list of source file paths,
+  * //actions// -- either a single action, or a list of actions.
+Actions may be commands as shown presented in the next section
+or simple strings that will interpreted as shell commands.
+
+For example, to create a rule by moving a file named ''config.sample''
+to ''app.config'', it is straight-forwardly written by:
+<code python>
+rule("app.config", "config.sample", move("config.sample", "app.config"))
+</code>
+
+The example below shows how to add a console action to package
+a directory:
+<code python>
+rule("dir.tgz", "dir", "tar cvfz dir.tgz dir")
+</code>
+
+You can also use phony rule to trigger actions that does not correspond
+to files as below:
+<code python>
+phony("autodoc", [], "doxygen")
+</code>
+
+The ''goal'' rules are phony rules displayed with option ''-l''. You can
+assign a description when the rule is displayed using ''DESCRIPTION''
+variable as below:
+<code python>
+my_goal = goal("my_goal", sources, actions)
+my_goal.DESCRIPTION = "description"
+</code>
+
+
+There are different ways to generate files that are built as rules:
+  * ''makefile''(//path//, //content//) -- generate the file correspoding to the //path//
+and write inside the given //content//.
+  * ''directory''(//path//) -- this goal ensures that the directory corresponding to the given //path// exists.
+
+
+===== Actions =====
+
+In the previous goals and rules, actions may be object of type Action but also strings
+that are automatically promoted as ''shell'' actions. Yet, other actions exists:
+
+  * ''fun''(//function//) -- build an action like a call to the given function.
+  * ''hidden''(//actions//) -- perform the parameter actions without
+displaying the commands.
+  * ''makedir''(//path//= -- build the directory matching the given path,
+if it doesn't exist, and intermediate directories.
+  * ''move''(//files//, //target//) -- move //files// to the //target// directory.
+  * ''remove''(//files//, //ignore_error// = false) -- remove the listed
+files; if ignore_error is true, any error during the removal will be ignored.
+  * ''shell''(//commands//) -- build a a shell action.
+  * ''show''(//message//) -- display the given message.
+
+
+====== Special Variables ======
+
+===== Global Variables =====
+
+  * ''BPATH'' -- path used to build files in (as default, the directory containing the script).
+  * ''PROJECT'' -- project name.
+  * ''VERSION'' -- current version of the project.
+
+
+===== File Variables =====
+
+These variable can set on files (that are also environments) to change the way the file is used or to provide additional information. One way to assign a variable to a file is:
+<code python>
+file(FILE_PATH).VARIABLE = VALUE
+</code>
+
+  * ''DESCRIPTION'' -- put on a goal, provides usage description with ''-l'' option.
+
+
+====== Standard Environment ======
+
+The standard environment provides a consistent environment to let other modules
+interact in a convenient. It is not mandatory (you can provide your own
+standard module if needed) but this may make interaction with other modules
+more difficult.
+
+To use it:
+<code python>
+import maat.std as std
+</code>
+
+===== Standard goals =====
+
+The standard module provides the following  goals:
+  * ''all'' -- compiles all,
+  * ''clean'' -- clean all produced files,
+  * ''distclean'' -- clean all files including configuration and .pyc files,
+  * ''config'' -- launch the configuration lookup.
+
+
+===== Standard Variables =====
+
+These goals are using the following variables:
+  * ''ALL'' -- list of targets to build,
+  * ''CLEAN'' -- list of files to clean up,
+  * ''DISTCLEAN'' -- list of files to clean in addition to ''CLEAN'',
+  * ''INSTALL_PROGRAMS'' -- list of programs to install,
+  * ''INSTALL_LIBS'' -- list of libraries to install,
+  * ''INSTALL_DATA'' -- list of data files to install.
+
+In order to append some goal or some file to one of these variables,
+you have to write (here for ''ALL''):
+<code python>
+std.ALL.append(goal)
+</code>
+
+For example, if you have a special rule to build your documentation,
+you can write:
+<code python>
+doc = goal("doc", [source files], actions)
+std.ALL.append(doc)
+</code>
+
+
+===== Build Mode =====
+
+The standard module provides limited support for build modes: a variable
+named ''BUILD_MODE'' is automatically generated in ''config.py'' with
+value ''Debug''. Any module, sensitive to building mode, can use it
+to change its own configuration. Basically, these module can support
+configuration variable which name is built using the value of
+''BUILD_MODE'' (see C/C++ module for a practical use of the concept).
+
+''BUILD_MODE'' virtually support any value providing the fact that
+other module can handle these special ''BUILD_MODE'' values. Basically,
+the standard module comes with two predefined values:
+  * ''Debug'' -- for debug mode compilation (meaning (a) the compiled files
+contains information to be debugged and (b) the compilation process is fast
+to enable fast testing).
+  * ''Release'' -- for release mode compilation to get compiled files
+ready for deployment (this means the compiled files are optimized and
+that the compilation process may be slower).
+
+
+====== Install Module ======
+
+Install module provides basic facilities for installation of the application
+on the system. Most constructors provided by other modules automatically
+contribute to the installation (e.g. C module for programs and libraries).
+For most of them, you can let the module do the default installation or
+you can control the installation directory using the ''INSTALL'' variable.
+''INSTALL'' can get a valid path where to install the built resource,
+an empty string for default installation path or None to prevent installation.
+
+The default installation path are derived from conventions of the actual
+system. On Unix, typically, the installation directories are:
+  * ''/usr'' as a base directory,
+  * ''/usr/bin'' for programs,
+  * ''/usr/lib/'' for libraries,
+  * ''/usr/share/PROJECT'' for data (where PROJECT is a variable provided
+by the user naming the project).
+
+The base installation directory may be customized by setting somewhere
+in the script (preferably ''config.py'') the variable ''PREFIX''.
+
+The installation is launched with by the call to ''make.py'':
+<code bash>
+> ./make.py install
+</code>
+
+If the automatic constructors are not enough, user has the ability to
+add installations by hand:
+
+<code python>
+from maat import install
+</code>
+
+  * ''install.program''(prog, to) -- install the given program in the //to//
+directory (optional).
+  * ''install.lib''(lib, to) -- install the given library in the //to//
+directory (optional).
+  * ''install.data''(data, to, discard) -- install the given data file
+or directory recursively in the //to// directory (optional). The //discard//
+must be a file filter and, if provided, remove the paths matching this filter
+from installation.
+
+
+====== C/C++ Module ======
+
+The C module is dedicated to the compilation of C or C++ files. To use it:
+<code python>
+import maat.c as c
+</code>
+
+This module provides generator from .c, .cpp, .c++, .cxx or .C source files
+to object .o files.
+
+
+===== Building a Program =====
+
+<code python>
+c.program(PROGRAM, [SOURCES], OPTIONS...)
+</code>
+
+Build a C/C++ program from a list of sources.
+On Windows, .exe is added automatically to the program name.
+
+//PROGRAM// is the program name.
+
+//SOURCES// is a comma separated list of source files.
+
+The //OPTIONS// may be one or several of:
+  * ''CFLAGS'' -- ''CFLAGS'' to apply to each C source,
+  * ''CXXFLAGS'' -- ''CXXFLAGS'' to apply to each C++ source,
+  * ''LDFLAGS'' -- flags to apply at link time,
+  * ''LIBS'' -- list of libraries to use,
+  * ''RPATH'' -- list of directories to retrieve libraries at link time,
+  * ''INSTALL'' -- select directory for installation (None for no installation).
+(only on OS supporting this).
+
+
+===== Building a Library =====
+
+<code python>
+c.lib(NAME, [SOURCES], OPTIONS...)
+</code>
+
+Build a C/C++ static library from a list of sources.
+
+//NAME// is the library name.
+
+//SOURCES// is the list of sources.
+
+The //OPTIONS// may be a combination of:
+  * ''type'' -- select the type of library to build (''static'' (default)
+for static library, ''dynamic'' for dynamic or shared library, ''both'' for both types),
+  * ''CFLAGS'' -- ''CFLAGS'' to apply to each C source,
+  * ''CXXFLAGS'' -- ''CXXFLAGS'' to apply to each C++ source,
+  * ''PREFIX'' -- prefix for producing static library file (system default
+if not provided),
+  * ''SUFFIX'' -- suffix for producing static library file (system default
+if not provided).
+  * ''DYN_PREFIX'' -- prefix for producing dynamic library file (system default
+if not provided),
+  * ''DYN_SUFFIX'' -- suffix for producing dynamic library file (system default
+if not provided).
+  * ''INSTALL'' -- select directory for installation (None for no installation).
+
+The following //OPTIONS// applies only when a dynamic/shared is built:
+  * ''LDFLAGS'' -- additional link flags,
+  * ''LIBS'' -- list of libraries to link with.
+  * ''RPATH'' -- list of directories to retrieve libraries at link time
+(only on OS supporting this).
+
+
+===== Library Resolution =====
+
+When a list of names is passed in the ''LIBS'' option of ''c.program'',
+the module will be perform an automatic lookup:
+  * if a C library matches the library name, it is used and the building
+order will take into account this dependency;
+  * else the library is considered to be part of the OS and linked with
+''-l'' option.
+
+===== Common Flags =====
+
+This module uses the following variables to control the compilation.
+Notice that between brackets are noted the place they can apply:
+source file, object file, program, etc.
+  * ''CC'' -- C compiler, looked up at configuration [object, program],
+  * ''CXX'' -- C++ compiled, look up at configuration [object, program],
+  * ''CFLAGS'' -- flags for C compilation [object, source],
+  * ''CXXFLAGS'' -- flags for C++ compilation [object, source],
+  * ''LDFLAGS'' -- link flags for C/C++ program building [program].
+
+The example show to define ''CFLAGS'' for all objects and how to specialize
+for a particular object:
+<code python>
+from maat import *
+from maat import c
+
+CFLAGS = "-g3"
+file("main.o").CFLAGS = CFLAGS + " -O2"
+file("prog").LDFLAGS = "-lm"
+
+c.program("prog", ["main.c", "mod1.c", "mod2.c"])
+</code>
+
+
+===== Module Variables =====
+
+The following variables are provided by this module and may be used
+for your convenience (modify them at your own risk):
+  * ''EXE_SUFFIX'' -- OS executable suffix,
+  * ''LIB_PREFIX'' -- OS static library prefix,
+  * ''LIB_SUFFIX'' -- OS static library suffix.
+  * ''DLIB_PREFIX'' -- OS dynamic library prefix,
+  * ''DLIB_SUFFIX'' -- OS dynamic library suffix.
+
+Provided configuration item include:
+  * ''CONFIG_CC'' -- configuration item to find C compiler,
+  * ''CONFIG_CXX'' -- configuration item to find C++ compiler,
+  * ''CONFIG_AR'' -- configuration item to find library archiver tool
+(on OS supporting it).
+
+
+===== Providing a Dependency =====
+
+When a name is passed to the ''LIBS'' variable (on programs or
+on dynamic library), @(MAAT) performs an automatic lookup to find the
+matching library. For now, the name may be a symbol built by the @(MAAT)
+scripts or it is considered as part of the host OS (resulting in a simple
+''-l'' translation).
+
+In the former case, @(MAAT) look for a file with the matching name
+at the top-level directory. The matching file does not need to exists
+but it has to provide one or several of the following variables to
+control the linkage process:
+  * ''PROVIDE_LDFLAGS'' -- these flags are added on the link command,
+  * ''PROVIDE_PATH'' -- this(ese) path(s) are added to the list of paths
+used to retrieve libraries,
+  * ''PROVIDE_LIB'' -- this(ese) library(ies) are linked using usual
+flag ''-l'' to the built object.
+
+**Briefly, the ''PROVIDE_''//XXX// variable provide a simple way to link
+any  item (built from the script or provided by another way) with existing
+libraries and using the right linking flags.**
+
+===== Support for Build Mode =====
+
+This module support the build mode concept of the standard module.
+
+For object building (from C/C++ source to object), the compilation flags
+are additionally obtained from variable named ''CFLAGS_$(BUILD_MODE)''.
+The default configuration set this flags to ''-g3'' to enable debugging.
+
+For executable or dynamic library building, the ''LDFLAGS_$(BUILD_MODE)''
+may provide additional flags and the defaults value is empty.
+
+You can customize the flags depending on the mode using the variables
+(found in ''config.py''):
+  * ''CFLAGS_Debug''
+  * ''CFLAGS_Release''
+  * ''LDFLAGS_Debug''
+  * ''LDFLAGS_Release''
+
+Additionally, you can define your own ''BUILD_MODE'' and, if the corresponding
+''CFLAGS'' and ''LDFLAGS'' variable exist, they will be used in
+compilation and linkage implemented in this module.
+
+
+
+
+====== Test Module ======
+
+This module aims to make automatic testing of programs compiled, or not,
+using @(MAAT). In each subdirectory //DIR// where tests are created,
+they can be invoked using the command:
+<code sh>
+./make.py DIR/test
+</code>
+
+All tests and their results are displayed in turn and overall statistics
+are produced at the end.
+
+To uses tests in ''make.py'', just import the ''test'' module:
+<code python>
+from maat import test
+</code>
+
+===== Test Case =====
+
+Tests are grouped in case tests that are named, optionally support
+dependencies on other made files and are declared by:
+<code python>
+test.case(NAME, [DEPENDENCIES], [private = True])
+</code>
+
+A particular test case named //CASE// in a directory //DIR// can be invoked 
+alone with:
+<code python>
+./make.py DIR/CASE
+</code>
+
+Test cases are usual made phony goals: they are rebuilt each time
+they are invoked. In the following, different test facilities are
+presented. This tests have also a name and ca be invoked separately
+with the command:
+<code sh>
+./make.py DIR/TEST
+</code>
+
+Another way to invoke test cases is to use the goal ''test'':
+<code sh>
+./make.py test
+</code>
+
+This command will invoke all test cases declared except test cases
+built with option ''private = True''.
+
+
+===== Command Test =====
+
+A command test just invoke a command with a particular set of parameters.
+The command may be built the @(MAAT) build system. If the command
+succeed (return code 0 on most OS), the test is passed. If the command
+fails (return code different from 0 on most OS), the test fails.
+
+A command test is declare by:
+<code python>
+test.command(CASE, NAME, [ARGUMENTS],
+	inp = IN,
+	out = OUT,
+	err = ERR,
+	deps = DEPENDENCIES,
+	dir = DIR)
+</code>
+Where:
+  * //CASE// -- a test case as declared in previous section,
+  * //NAME// -- string representing the name of the test,
+  * //ARGUMENTS// -- program (first) and arguments passed to the program,
+  * //IN// (optional) -- file to use as standard input of the command,
+  * //OUT// (optional) -- file to store the standard output of the command,
+  * //ERR// (optional) -- file to store the standard error of the command,
+  * //DEPENDENCIES// (optional) -- list of @(MAAT) dependencies that must be
+made before running the test,
+  * //DIR// -- directory in which the command is executed (automatically added
+to dependencies of the test).
+
+If the program is already known by @(MAAT), it is automatically added
+to the list of dependencies.
+
+A reverse version of this test exists: it succeeds when the command fails!
+Its syntax is very close:
+<code python>
+test.failing_command(CASE, NAME, [ARGUMENTS],
+	inp = IN,
+	out = OUT,
+	err = ERR,
+	deps = DEPENDENCIES,
+	dir = DIR)
+</code>
+
+
+===== Output Test =====
+
+The goal of an output test is to run a command and to compare the output
+and/or the error output with a reference output and/or error output.
+The test succeeds if the outputs are the same or fails if they are
+different.
+
+Such a test is declared with:
+<code python>
+test.output(CASE, NAME, [ARGUMENTS],
+	input = IN,
+	out = OUT,
+	out_ref = OUT_REF,
+	err = ERR,
+	err_ref = ERR_REF, 
+	deps = DEPENDENCIES)
+</code>
+Where:
+  * //CASE// -- a test case as declared in previous section,
+  * //NAME// -- string representing the name of the test,
+  * //ARGUMENTS// -- program (first) and arguments passed to the program,
+  * //IN// (optional) -- path of a file to use as standard input,
+  * //OUT// (optional) -- file path for the output,
+  * //OUT_REF// (optional) -- file path for the reference output,
+  * //ERR// (optional) -- file path for error output,
+  * //ERR_REF// (optional) -- file path for error reference output,
+  * //DEPENDENCIES// (optional) -- list of @(MAAT) dependencies that must be
+made before running the test.
+
+If one of //OUT//, //ERR//, //OUT_REF// or //ERR_REF// is omitted,
+the corresponding output is simply ignored in the comparison.
+
+
+A reference output is created the first time the test is launched
+(when the reference file is missing). Then, if the output has changed
+because of the evolution of the software and, therefore, a new reference
+needs to be generated: just remove the old reference file and re-launch
+the test: the new reference file will be created. 
+
+
+
+====== Command Line Options ======
+
+@(MAAT) comes with comprehensive set of command line options that let
+the user precisely tuning the behaviour of the builder.
+ 
+===== List of options =====
+
+^ short ^ long              ^ description                                                                 ^
+| -h    | --help            | Show this help message and exit                                             |
+| -v    |--verbose          | Verbose mode: useful to debug a script.                                     |
+| -l    | --list            | Display available public goals.                                             |
+| -V    | --version         | Display the current version.                                                |
+| -p    | --print-data-base | Print the recipe database.                                                  |
+| -n    | --dry-run         | Display the commands but does not execute them.                             |
+|       | --just-print      |                                                                             |
+| -t    | --time            | Display processing time.                                                    |
+| -s    | --quiet           | Work in quiet mode (doesn't display anything).                              |
+|       | --silent          |                                                                             |
+| -B    | --always-make     | Rebuild all without checking for updates.                                   |
+| -q    | --question        | Test if something has to be updated (result in return code).                |
+| -e    | --embed           | Embed Maat in the current directory (making the project easier to compile). |
+
+
+===== Embedding @(MAAT) =====
+
+The option ''-e'' or ''--embed'' copies the required Python files to
+embed @(MAAT) in & directory named ''maat'' in the source directory
+of the current project. The option tries to minimize the number of
+needed file in order to get a @(MAAT) command usable for the project.
+
+This may be useful for two goals:
+
+* First, this avoids a user of the project sources to install @(MAAT).
+As @(MAAT) is very new software, this may be a burden to install only
+for one project. Additionally, as @(MAAT) is very light (about 3,000
+lines of code) and as Python is mostly available everywhere, embedding
+@(MAAT) is not so heavy but make easier the construction anywhere.
+
+* The second can concerne the version of @(MAAT): by embedding the
+sources of @(MAAT), it is sure that the scripts will be compatible
+with the @(MAAT) and the building is sure to succeed.
+
+
