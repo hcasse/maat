@@ -155,7 +155,7 @@ gen_command(".c", ".y", comp_y_to_c)
 
 
 # Library Delegate
-class LibSolver(Delegate):
+class LibSolver(common.Delegate):
 	prog = None
 	libs = None
 	
@@ -269,7 +269,7 @@ LIBS = None, RPATH = None, INSTALL_TO = ""):
 		if f <> None:
 			prog.ADDED_LDFLAGS = "%s %s" % (prog.ADDED_LDFLAGS, f)
 	if LIBS:
-		post_inits.append(LibSolver(prog, LIBS))
+		common.post_inits.append(LibSolver(prog, LIBS))
 	if RPATH:
 		prog.RPATH = RPATH
 	

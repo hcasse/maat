@@ -37,24 +37,6 @@ import sign
 import sys
 
 
-class Delegate:
-	"""Delegate action (used specially for post-initialization actions)."""
-	
-	def perform(self, ctx):
-		"""Called to perform the action."""
-		pass
-
-class FunDelegate(Delegate):
-	"""Simple delegate calling a function."""
-	fun = None
-	
-	def __init__(self, fun):
-		self.fun = fun
-	
-	def perform(self, ctx):
-		self.fun()
-
-
 # global variables
 version = "0.5"
 topdir = env.topdir	# top directory
@@ -63,7 +45,6 @@ verbose = False		# verbose mode
 do_config = False	# configuration need to be done
 do_list = False		# list the goals
 do_print_db = False	# print the data base
-post_inits = []		# Processing to call just before building
 maat_dir = env.top.path / ".maat"
 """Temporary path for Maat files"""
 
@@ -190,7 +171,7 @@ def make_work(ctx = io.Context()):
 		ctx.complete_quiet = True
 
 	# post-initializations
-	for post in post_inits:
+	for post in common.post_inits:
 		post.perform(ctx)
 	
 	# embed action

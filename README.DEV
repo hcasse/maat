@@ -3,6 +3,7 @@
 
 ===== Command =====
 
+[ ] add option --embed++ or -e+ for embedding a minimal Python script
 [ ] add option to call configuration program and get back result in variables
 [ ] add special file names to design shortly source and targets
 [ ] add option to dump selected variables
@@ -102,33 +103,32 @@
 ===== Generic Rules =====
 
 Generic rules allows to infer string of rules between a result suffix
-''.res'' and a depenedency suffix ''.dep''. The generic rules are implemented
-in the ''recipe'' module.
+''.res'' and a depenedency suffix ''.dep''. The generic rules are implemented in the ''recipe'' module.
 
-To implement this, a kind of graph,
-more exactly a first a forest of tree is maintained.
-The node of the graph are the extensions, class ''Ext'', and the edges
-are the generators, class ''Gen''. The edge can be crawled forward
-(''ext'' array) and backward (''backs'' array). All the nodes are stored
-in the map ''ext_db'', associating the extension as a string to the
+To implement this, a kind of graph, more exactly a first a forest of tree is maintained. The node of the graph are the extensions, class ''Ext'', and the edges are the generators, class ''Gen''. The edge can be crawled forward (''ext'' array) and backward (''backs'' array). All the nodes are stored in the map ''ext_db'', associating the extension as a string to the
 extension as an object of class ''Ext''.
 
-The ''gens'' map in ''Ext'' associates the current extension as source
-to any target extension for which a generic rules exists. If the ''gens''
-map of ''.dep'' contains a generation for ''.res'' (different of //None//),
-then the ''.dep'' can be translated to the ''.ress'' file.
+The ''gens'' map in ''Ext'' associates the current extension as source to any target extension for which a generic rules exists. If the ''gens'' map of ''.dep'' contains a generation for ''.res'' (different of //None//), then the ''.dep'' can be translated to the ''.ress'' file.
 
-In fact, the obtained graph is transitively closed: if there is a rule
-to translate ''.a'' to ''.b'' and a rule to translate ''.b'' to ''.c''
-then there is an entry ''.c'' in ''.b'' ''gens'' array (straight)
-but also an entry ''.c''' in ''.a'' ''gens'' array (transitive).
-The overall result is that it is very quick to know if it is possible
-to test if there is some translation string from ''.a'' to ''.b''.
-''.b'' must in the ''gens'' map of ''.a''. As a second result, it is
-easy to compute the translation string from ''.a'' to ''.b'': starting
-at ''.a'', one has to follow the generation rules and extensions by
+In fact, the obtained graph is transitively closed: if there is a rule to translate ''.a'' to ''.b'' and a rule to translate ''.b'' to ''.c'' then there is an entry ''.c'' in ''.b'' ''gens'' array (straight) but also an entry ''.c''' in ''.a'' ''gens'' array (transitive). The overall result is that it is very quick to know if it is possible to test if there is some translation string from ''.a'' to ''.b''. ''.b'' must in the ''gens'' map of ''.a''. As a second result, it is easy to compute the translation string from ''.a'' to ''.b'': starting at ''.a'', one has to follow the generation rules and extensions by
 accessing the ''.b'' entry in ''gens'' maps.
  
+===== Embedding the script =====
+
+The main of the "--embed" option is to compensate the lack of spread of Maat. The main idea is to provide Maat with the sources that use it. In its initial version, Maat copies the modules used in the sources in a ''maat'' directory contained in the sources.
+If, in the first versions of Maat, these sources were relativelight, the current version are heavier (100-200 Kb) making this solution difficult to support in the future.
+
+Another solution (embed, V2) would be to embed only a minimal version of Maat that would be in charge of downloading the required modules (considering that an Internet version is available). It must be noted that no archived script of Maat must be modified by the operation to prevent commiting of modified version of the script. This initial script should be contain the following:
+  * test if there is a top-level script ''top.py'',
+  * if it does not exist, download ''top.py'' and the required modules (this requires a file recording the used module -- ''modules.csv''),
+  * finally, pass the control to the ''top.py''.
+If the script uses a not already available module, it has to download the module and to record in ''modules.csv'' the added module. As ''__init__.py'', ''modules.csv'' has to be included in the CVS and its updates will also automatically be recorded.
+
+
+
+
+
+
 
 
 

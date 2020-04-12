@@ -21,6 +21,8 @@ import imp
 import maat
 import maat.io as io
 import os.path
+import action
+import recipe
 import sys
 
 # Config class
@@ -200,6 +202,16 @@ def make(ctx = io.Context()):
 	# disable config mode
 	in_config = False
 
+
+# install config goal
+def install_goal():
+	path = env.cenv.path / "config"
+	if not recipe.file_db.has_key(path):
+		g = maat.goal("config", [], action.FunAction(make))
+		g.DESCRIPTION = "build configuration"
+common.post_inits.append(common.FunDelegate(install_goal))
+
+
 class FindProgram(Config):
 	"""Find the path of a program and display associated message.
 	
@@ -261,4 +273,8 @@ class FindProgram(Config):
 
 
 def find_program(label, var, progs, paths = [], syspath = True, sysfirst = True):
+	"""Add a configuration node looking for a program with the given label,
+	setting the variable var, looking for program in progs and in the given
+	paths. If syspath is set to False, do not look in system path. If sysfirst
+	is set to False, do not first look in system paths."""
 	register(FindProgram(label, var, progs, paths, syspath, sysfirst))

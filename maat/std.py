@@ -35,6 +35,7 @@ In addition, it is using the following variables from the current environment:
 
 import maat
 import action
+import common
 import config
 import env
 import install
@@ -74,12 +75,6 @@ def install_default_goals():
 		g = maat.goal("distclean", ["clean"], maat.remove(DISTCLEAN, ignore_error = True))
 		g.DESCRIPTION = "remove produced files and configuration files"
 
-	# install config
-	path = env.cenv.path / "config"
-	if not recipe.file_db.has_key(path):
-		g = maat.goal("config", [], action.FunAction(config.make))
-		g.DESCRIPTION = "build configuration"
-
 	# install install
 	if not recipe.file_db.has_key(env.top.path / "install"):
 		g = maat.goal("install", INSTALL)
@@ -95,4 +90,4 @@ def install_default_goals():
 	config.set_if("BUILD_MODE", lambda : "Debug")
 	config.set_comment("BUILD_MODE", "one of Debug or Release")
 
-maat.post_inits.append(maat.FunDelegate(install_default_goals))
+common.post_inits.append(common.FunDelegate(install_default_goals))

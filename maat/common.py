@@ -332,3 +332,26 @@ def as_list(x):
 	else:
 		return [ x ]
 
+
+class Delegate:
+	"""Delegate action (used specially for post-initialization actions)."""
+	
+	def perform(self, ctx):
+		"""Called to perform the action."""
+		pass
+
+class FunDelegate(Delegate):
+	"""Simple delegate calling a function."""
+	fun = None
+	
+	def __init__(self, fun):
+		self.fun = fun
+	
+	def perform(self, ctx):
+		self.fun()
+
+
+# post-initializatioon list
+post_inits = []		# Processing to call just before building
+
+

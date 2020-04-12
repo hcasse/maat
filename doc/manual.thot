@@ -383,7 +383,7 @@ Once the program is found, its path is recorded in //var// variable.
 
 Example:
 <code python>
-config.find_program("Brower", BROWSER, ["firefox", "opera", "galeon"])
+config.find_program("Brower", "BROWSER", ["firefox", "opera", "galeon"])
 </code>
 
 

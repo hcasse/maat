@@ -251,10 +251,19 @@ class ScriptEnv(ParentEnv):
 			self.map[id] = val
 
 
+class ConfigEnv(ScriptEnv):
+	
+	def __init__(self, name, path, parent = None, map = None):
+		ScriptEnv.__init__(self, name, path, parent, map)
+	
+	def get(self, id, deft):
+		return ScriptEnv.get(self, id, deft)
+		
+		
 # environment definitons
 osenv = OSEnv()
 root = MapEnv("builtin", topdir, osenv)
-conf = ScriptEnv("config", topdir, root, { })
+conf = ConfigEnv("config", topdir, root, { })
 top = ScriptEnv("main", topdir, conf, sys.modules['__main__'].__dict__)
 curenv = top			# current environment
 common.topenv = top		# to break depedency circularity
