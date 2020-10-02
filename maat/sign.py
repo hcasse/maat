@@ -48,7 +48,7 @@ def load(ctx = io.DEF):
 			signs = v
 			#for k in signs.keys():
 			#	print "DEBUG sign %s: %s" % (k, signs[k])
-		except IOError, e:
+		except IOError as e:
 			ctx.print_warning("signature file cannot be open (%s). This may cause some unexpected recompilations." % e)
 			update = True
 
@@ -69,7 +69,7 @@ def save(ctx = io.DEF):
 	try:
 		f = open(str(p), "wb")
 		marshal.dump(signs, f)
-	except IOError, e:
+	except IOError as e:
 		ctx.print_warning("cannot save signature file: %s." % e)
 	
 
@@ -98,7 +98,7 @@ def test(file):
 			return False
 	
 	# no signature available
-	except KeyError, e:
+	except KeyError as e:
 		#print "DEBUG: %s has no signature!" % k
 		return False
 
@@ -116,7 +116,7 @@ def record(file):
 		ss = signs[k]
 	except KeyError:
 		ss = None
-	if s <> ss:
+	if s != ss:
 		signs[k] = s
 		update = True
 		#print "DEBUG: record signature of %s (%s)" % (k, s)

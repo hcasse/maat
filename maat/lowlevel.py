@@ -16,12 +16,12 @@
 """These modules implements low-level and compatible operations performed
 by the Maat build system."""
 
-import common
-import env
-import io
-
 import os
 import shutil
+
+import maat.common as common
+import maat.env as env
+import maat.io as io
 
 def makedir(path):
 	"""Build a directory if not existing, building possibly intermediate
@@ -30,7 +30,7 @@ def makedir(path):
 	if not os.path.isdir(path):
 		try:
 			os.makedirs(path)
-		except os.error, e:
+		except os.error as e:
 			common.error("cannot create '%s': %s" % (path, e))
 
 

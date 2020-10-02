@@ -21,8 +21,8 @@ import os
 import sys
 import time as pytime
 
-import io
-import sign
+import maat.io
+import maat.sign
 
 script_failed = False
 topenv = None
@@ -70,7 +70,7 @@ class Path:
 		else:
 			self.path = str(path)
 	
-	def __div__(self, arg):
+	def __truediv__(self, arg):
 		return Path(os.path.join(self.path, str(arg)))
 	
 	def __add__(self, ext):
@@ -148,7 +148,7 @@ class Path:
 	def makedir(self):
 		"""Build a directory corresponding to the current path. If needed,
 		creates intermediate directories. May raise OError."""
-		if self.path <> "" and not os.path.isdir(self.path):
+		if self.path != "" and not os.path.isdir(self.path):
 			os.makedirs(self.path)
 
 

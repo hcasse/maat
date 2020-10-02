@@ -19,10 +19,10 @@ import os.path
 import shutil
 
 from maat import *
-import action
-import common
-import env
-import std
+from maat import action
+from maat import common
+from maat import env
+from maat import std
 
 
 class Install(action.Action):
@@ -49,7 +49,7 @@ class Install(action.Action):
 			lowlevel.makedir(path)
 			shutil.copyfile(str(self.file), str(path / self.file.path.get_file()))
 			ctx.print_action_success()
-		except IOError,e :
+		except IOError as e :
 			msg = str(e)
 			ctx.print_action_failure(msg)
 			common.error("installation failed")

@@ -15,14 +15,15 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes used to represent recipes."""
-import action
-import common
-import env
-import io
 import os
 import os.path
-import sign
 import sys
+
+from maat import action
+import maat.common as common
+import maat.env as env
+import maat.io as io
+import maat.sign as sign
 
 file_db = { }		# file database
 ext_db = { }		# extension database
@@ -42,7 +43,7 @@ class File(env.MapEnv):
 	  (goals are also phony)."""
 	
 	def __init__(self, path):
-		env.MapEnv.__init__(self, path.get_file() , env.cenv.path, env.cenv)
+		env.MapEnv.__init__(self, path.get_file() , env.cur.path, env.cur)
 		self.path = path
 		file_db[str(path)] = self
 		self.recipe = None
@@ -133,7 +134,7 @@ class File(env.MapEnv):
 			#print "DEBUG: %s updated because it is phony!" % self
 			return True
 		elif not self.actual().exists():
-			if self.recipe <> None:
+			if self.recipe != None:
 				#print "DEBUG: %s updated because it doesn't exist!" % self
 				return True
 			else:
@@ -177,6 +178,10 @@ class File(env.MapEnv):
 	def __repr__(self):
 		return self.__str__()
 
+	def add_dep(self, dep):
+		"""Add a dependency to the recipe building this file."""
+		self.recipe.deps.append(dep)
+
 
 def add_alias(file, name):
 	"""Add an alias for the given file with the given name."""
@@ -190,13 +195,13 @@ def get_file(path):
 	
 	# apply localisation rule
 	if not os.path.isabs(str(path)):
-		path = env.cenv.path / path
+		path = env.cur.path / path
 	else:
 		path = common.Path(path)
 	path = path.norm()
 	
 	# find the file
-	if file_db.has_key(str(path)):
+	if str(path) in file_db:
 		return file_db[str(path)]
 	else:
 		return File(path)
@@ -209,13 +214,13 @@ def get_goal(path):
 	
 	# apply localisation rule
 	if not os.path.isabs(str(path)):
-		fpath = env.cenv.path / path
+		fpath = env.cur.path / path
 	else:
 		fpath = common.Path(path)
 	fpath = fpath.norm()
 	
 	# find the file
-	if file_db.has_key(str(fpath)):
+	if str(fpath) in file_db:
 		return file_db[str(fpath)]
 	else:
 		raise common.MaatError("goal %s does not exist" % path)
@@ -250,7 +255,7 @@ class Recipe:
 		for f in ress:
 			f.recipe = self
 			f.is_target = True
-		self.env = env.cenv
+		self.env = env.cur
 		self.cwd = ress[0].get('cwd')
 		if not self.cwd:
 			self.cwd = self.env.path
@@ -320,7 +325,7 @@ class Ext:
 
 def get_ext(ext):
 	"""Obtain an extension."""
-	if ext_db.has_key(ext):
+	if ext in ext_db:
 		return ext_db[ext]
 	else:
 		return Ext(ext)
@@ -456,7 +461,7 @@ def gen(dir, rext, dep):
 	
 	# end when dep is found
 	ress = []
-	while ext.ext <> rext:
+	while ext.ext != rext:
 		gen = ext.gens[rext]
 		next = kern + gen.res.ext
 		gen.gen(next, prev)
@@ -484,7 +489,7 @@ def rule(ress, deps, *actions):
 def phony(goal, deps, *actions):
 	"""Build a goal with the following dependencies that does not
 	match a real file."""
-	path = common.Path(env.cenv.path) / goal
+	path = common.Path(env.cur.path) / goal
 	file = get_file(str(path))
 	if file.recipe:
 		common.script_error("a goal named '%s' already exist!" % goal)
@@ -522,7 +527,7 @@ def find_exact(name):
 	"""Look if an entity with exactly the given name exists and return it."""
 	try:
 		return file_db[name]
-	except KeyError, e:
+	except KeyError as e:
 		return None
 
 
@@ -550,5 +555,5 @@ def parse_deps(path):
 					if t.recipe:
 						for d in ds:
 							t.recipe.add_dep(d)
-	except IOError, e:
+	except IOError as e:
 		pass

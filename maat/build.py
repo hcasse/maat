@@ -22,10 +22,10 @@ and ParBuilder."""
 import os
 import sys
 
-import common
-import io
 import maat
-import sign
+from maat import common
+from maat import io
+from maat import sign
 
 class Job:
 	
@@ -52,13 +52,13 @@ class Job:
 	def prepare(self):
 		"""Prepare the target to run the action."""
 		self.start_time = common.time()
-		if self.target.recipe <> None:
+		if self.target.recipe != None:
 			for r in self.target.recipe.ress:
 				ppath = r.actual().parent()
-				if not ppath.exists():
+				if not r.is_phony and not ppath.exists():
 					try:
 						os.makedirs(str(ppath))
-					except error, e:
+					except error != e:
 						common.error(env.ElfError(str(e)))
 		self.push_env()
 

@@ -113,9 +113,9 @@ def make_objects(dir, sources, opt, CFLAGS):
 		objs.append(o)
 		o.CFLAGS = CFLAGS
 		added = ""
-		if o.BUILD_MODE <> "":
+		if o.BUILD_MODE != "":
 			f = o["CFLAGS_%s" % o.BUILD_MODE]
-			if f <> None:
+			if f != None:
 				added = "%s %s" % (added, f)
 		#d = file(maat_dir / o.path.parent().relative_to_top())
 		#if not d.recipe:
@@ -157,9 +157,9 @@ LIBS = None, INSTALL_TO = "", opt = False):
 	recipe.ActionRecipe([prog], objs, Linker(prog, objs, libs, opt))
 	if LDFLAGS:
 		prog.LDFLAGS = LDFLAGS
-	if prog.BUILD_MODE <> "":
+	if prog.BUILD_MODE != "":
 		f = prog["LDFLAGS_%s" % prog.BUILD_MODE]
-		if f <> None:
+		if f != None:
 			prog.ADDED_LDFLAGS = "%s %s" % (prog.ADDED_LDFLAGS, f)
 	#if LIBS:
 	#	post_inits.append(LibSolver(prog, LIBS))
@@ -167,7 +167,7 @@ LIBS = None, INSTALL_TO = "", opt = False):
 	# record it
 	std.ALL.append(prog)
 	std.DISTCLEAN.append(prog)
-	if INSTALL_TO <> None:
+	if INSTALL_TO != None:
 		prog.INSTALL_TO = INSTALL_TO
 		install.program(prog)
 

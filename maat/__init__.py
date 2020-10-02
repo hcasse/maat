@@ -16,25 +16,27 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Main module of Maat, a python-based build system."""
-import action
 import argparse
-import build
-import common
-import config
 import datetime
-import env
 import glob as pyglob
 import imp
 import inspect
-import io
-import lowlevel
 import os
 import platform
 import re
-import recipe
-import services
-import sign
+import subprocess
 import sys
+
+from maat import action
+from maat import build
+from maat import common
+from maat import config
+from maat import env
+from maat import io
+from maat import lowlevel
+from maat import recipe
+from maat import services
+from maat import sign
 
 
 # global variables
@@ -59,7 +61,7 @@ envstack = []
 def set_env(e):
 	global curenv
 	global curdir
-	env.cenv = e
+	env.cur = e
 	curenv = e
 	curdir = common.Path(e.path)
 	e.path.set_cur()
@@ -86,7 +88,7 @@ def panic(msg):
 	io.DEF.print_error(msg)
 	sys.exit(1)
 
-set_env(env.curenv)
+set_env(env.cur)
 
 
 # parse arguments
@@ -109,10 +111,10 @@ if not inspect.stack()[-1][1].endswith("pydoc"):
 	# get arguments
 	args = parser.parse_args()
 	if args.version:
-		print \
+		print(\
 """Maat V%s\nCopyright (c) 2016 H. Casse <hugues.casse@laposte.net>
 This is free software; see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" % version
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.""" % version)
 		exit(0)
 	verbose = args.verbose
 	do_config = False
@@ -159,7 +161,7 @@ def make_work(ctx = io.Context()):
 	"""Perform the real build."""
 	
 	# are we at the top make.py?
-	if env.cenv <> env.top:
+	if curenv != env.top:
 		return
 
 	# prepare context
@@ -207,10 +209,10 @@ def make_work(ctx = io.Context()):
 					b.show_time = True
 				b.build()
 				os._exit(0)
-			except common.MaatError, e:
+			except common.MaatError as e:
 				ctx.print_error(e)
 				os._exit(1)
-			except KeyboardInterrupt, e:
+			except KeyboardInterrupt as e:
 				ctx.print_error("action interrupted by user!")
 				os._exit(2)
 
@@ -238,12 +240,12 @@ atexit.register(make_at_exit)
 
 def defined(id):
 	"""Test if a symbol is defined."""
-	return env.cenv.is_def(id)
+	return curenv.is_def(id)
 
 
 def get(id, default = None):
 	"""Get a variable value."""
-	v = env.cenv.get(id)
+	v = curenv.get(id)
 	if v == None:
 		return default
 	else:
@@ -252,7 +254,7 @@ def get(id, default = None):
 
 def set(id, val):
 	"""Set a variable value."""
-	env.cenv.set(id, val)
+	curenv.set(id, val)
 
 
 def append(id, val):
@@ -269,7 +271,7 @@ def subdir(dir):
 		return
 	
 	# look for existence of make.py
-	dpath = (env.cenv.path / dir).norm()
+	dpath = (curenv.path / dir).norm()
 	path = dpath / "make.py"
 	if not path.can_read():
 		common.script_error("no 'make.py' in %s" % path)
@@ -280,7 +282,7 @@ def subdir(dir):
 	
 	# load make.py
 	mod = imp.load_source(name, str(path))
-	env.cenv.map = mod.__dict__
+	curenv.map = mod.__dict__
 	
 	# pop new environment
 	pop_env()
@@ -335,17 +337,17 @@ def rule(ress, deps, *actions):
 	"""Build a custom rule with actions."""
 	return recipe.rule(ress, deps, actions)
 
-def goal(ress, deps, *actions):
+def goal(ress, deps = [], *actions):
 	"""Build a goal rule with actions."""
 	return recipe.goal(ress, deps, *actions)
 
-def shell(cmd):
-	"""Build a shell action."""
-	return action.ShellAction(cmd)
+def command(cmd, **args):
+	"""Build a command action."""
+	return action.ShellAction(cmd, **args)
 
 def fun(f):
 	"""Build a function action."""
-	return action.FunAction(cmd)
+	return action.FunAction(f)
 
 def gen_action(res, dep, fun):
 	"""Build a generator that call the given function to get the real
@@ -379,7 +381,7 @@ def listdir(path = None):
 	"""List the content of a directory. If no argument is passed,
 	the current directory is listed."""
 	if not path:
-		path = env.cenv.path
+		path = curenv.path
 	return os.listdir(str(path))
 
 def file(p):
@@ -446,7 +448,7 @@ def shell(cmd):
 	"""Execute a command and return its results as a string."""
 	try:
 		return subprocess.check_output(cmd, shell = True).replace('\n', ' ')
-	except subprocess.CalledProcessError, e:
+	except subprocess.CalledProcessError as e:
 		io.DEF.print_error("error with call to '%s': %s" % (cmd, e))
 		exit(1)
 

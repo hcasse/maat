@@ -20,7 +20,7 @@ import os
 import os.path
 import sys
 
-import common
+import maat.common as common
 
 
 
@@ -87,7 +87,7 @@ class Env:
 		return id(self) == id(e)
 
 	def __ne__(self, e):
-		return id(self) <> id(e)
+		return id(self) != id(e)
 
 	def __lt__(self, e):
 		return id(self) < id(e)
@@ -136,7 +136,7 @@ class OSEnv(Env):
 			return False
 	
 	def is_def(self, id):
-		return os.getenv(id) <> None
+		return os.getenv(id) != None
 
 	def __str__(self):
 		return "OS"
@@ -184,11 +184,8 @@ class MapEnv(ParentEnv):
 	
 	def get(self, id, default = None):
 		try:
-			r = self.__dict__[id]
-			#print "DEBUG: %s: FOUND %s as %s" % (self.name, id, r)
-			return r
-		except KeyError, e:
-			#print "DEBUG: %s: NOT_FOUND %s" % (self.name, id)
+			return self.__dict__[id]
+		except KeyError as e:
 			return ParentEnv.get(self, id, default)
 	
 	def set(self, id, val):
@@ -203,7 +200,7 @@ class MapEnv(ParentEnv):
 	def get_here(self, id, default = None):
 		try:
 			return self.__dict__[id]
-		except KeyError, e:
+		except KeyError as e:
 			return default
 
 
@@ -212,23 +209,17 @@ class ScriptEnv(ParentEnv):
 	map = None
 	
 	def __init__(self, name, path, parent = None, map = None):
-		#print "DEBUG: SCRIPT(%s, %s)" % (name, id(map))
-		assert map <> None
+		assert map != None
 		ParentEnv.__init__(self, name, path, parent)
 		self.map = map
-		#self.__setattr__ = self.my_setattr
 	
 	def get(self, id, default = None):
 		try:
-			r = self.map[id]
-			#print "DEBUG: script %s: FOUND %s as %s" % (self.name, id, r)
-			return r
-		except KeyError, e:
-			#print "DEBUG: script %s: NOT_FOUND %s" % (self.name, id)
+			return self.map[id]
+		except KeyError as e:
 			return ParentEnv.get(self, id, default)
 	
 	def set(self, id, val):
-		#print "DEBUG: %s.set(%s, %s)" % (self.name, id, str(val)[:min(20, len(str(val)))])
 		self.map[id] = val
 
 	def is_def(self, id):
@@ -240,12 +231,11 @@ class ScriptEnv(ParentEnv):
 	def get_here(self, id, default = None):
 		try:
 			return self.map[id]
-		except KeyError, e:
+		except KeyError as e:
 			return default
 
 	def __setattr__(self, id, val):
-		#print "DEBUG: %s.setattr(%s, %s)" % (self.name, id, str(val)[:min(20, len(str(val)))])
-		if not self.__dict__.has_key("done") or self.__dict__.has_key(id):
+		if "done" not in self.__dict__ or id in self.__dict__:
 			self.__dict__[id] = val
 		else:
 			self.map[id] = val
@@ -258,13 +248,15 @@ class ConfigEnv(ScriptEnv):
 	
 	def get(self, id, deft):
 		return ScriptEnv.get(self, id, deft)
-		
+	
+	def is_configured(self, id):
+		return self.map.has_key(id)
 		
 # environment definitons
 osenv = OSEnv()
 root = MapEnv("builtin", topdir, osenv)
 conf = ConfigEnv("config", topdir, root, { })
 top = ScriptEnv("main", topdir, conf, sys.modules['__main__'].__dict__)
-curenv = top			# current environment
+cur = top			# current environment
 common.topenv = top		# to break depedency circularity
 

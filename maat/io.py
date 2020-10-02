@@ -154,5 +154,4 @@ class Context:
 			msg = "(%s) " % msg
 		self.print_action_final(msg + RED + BOLD + "[FAILED]" + NORMAL)
 
-
 DEF = Context()

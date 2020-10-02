@@ -457,7 +457,8 @@ Resources to examine files includes:
 
 ===== Other Primitives =====
 
-  * ''which''(//command//) -- look for the full path of //command// in the system path (returns ''None'' if not found); 
+  * ''shell''(//command//) -- execute the given //command// in a shell and return its output as a string.
+  * ''which''(//command//) -- look for the full path of //command// in the system path (returns ''None'' if not found).
 
 ===== Goals and Rules =====
 
@@ -523,7 +524,7 @@ if it doesn't exist, and intermediate directories.
   * ''move''(//files//, //target//) -- move //files// to the //target// directory.
   * ''remove''(//files//, //ignore_error// = false) -- remove the listed
 files; if ignore_error is true, any error during the removal will be ignored.
-  * ''shell''(//commands//) -- build a a shell action.
+  * ''command''(//commands//) -- build an action as a shell command.
   * ''show''(//message//) -- display the given message.
 
 

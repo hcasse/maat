@@ -15,14 +15,14 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os.path
+
 from maat import *
 import maat as base
-
-import common
-import action
-import install
-import recipe
-import std
+from maat import common
+from maat import action
+from maat import install
+from maat import recipe
+from maat import std
 
 # internals
 need_c = False
@@ -174,7 +174,7 @@ class LibSolver(common.Delegate):
 		# find the dependency
 		for lib in self.libs:
 			file = recipe.find_exact(lib)
-			if file <> None:
+			if file != None:
 				if file.PROVIDE_LIB:
 					libs.append(file.PROVIDE_LIB)
 				if file.PROVIDE_PATH:
@@ -208,7 +208,7 @@ def parse_dep(path):
 						for d in ds:
 							t.recipe.add_dep(d)
 			buf = ""
-	except IOError, e:
+	except IOError as e:
 		pass
 
 def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
@@ -228,12 +228,12 @@ def make_objects(dir, sources, CFLAGS, CXXFLAGS, dyn = False):
 		added = ""
 		if dyn:
 			added = "-fPIC"
-		if o.BUILD_MODE <> "":
+		if o.BUILD_MODE != "":
 			f = o["CFLAGS_%s" % o.BUILD_MODE]
-			if f <> None:
+			if f != None:
 				added = "%s %s" % (added, f)
 			f = o["CXXFLAGS_%s" % o.BUILD_MODE]
-			if f <> None:
+			if f != None:
 				added = "%s %s" % (added, f)
 		d = file(maat_dir / o.path.parent().relative_to_top())
 		if not d.recipe:
@@ -264,9 +264,9 @@ LIBS = None, RPATH = None, INSTALL_TO = ""):
 	recipe.ActionRecipe([prog], objs, Linker(prog, objs, is_cxx(sources)))
 	if LDFLAGS:
 		prog.LDFLAGS = LDFLAGS
-	if prog.BUILD_MODE <> "":
+	if prog.BUILD_MODE != "":
 		f = prog["LDFLAGS_%s" % prog.BUILD_MODE]
-		if f <> None:
+		if f != None:
 			prog.ADDED_LDFLAGS = "%s %s" % (prog.ADDED_LDFLAGS, f)
 	if LIBS:
 		common.post_inits.append(LibSolver(prog, LIBS))
@@ -276,7 +276,7 @@ LIBS = None, RPATH = None, INSTALL_TO = ""):
 	# record it
 	std.ALL.append(prog)
 	std.DISTCLEAN.append(prog)
-	if INSTALL_TO <> None:
+	if INSTALL_TO != None:
 		prog.INSTALL_TO = INSTALL_TO
 		install.program(prog)
 
@@ -295,7 +295,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL_TO = "", DYN_INSTALL_TO = ""
 
 	# build objects
 	sources = [file(s) for s in sources]
-	objs = make_objects(env.cenv.path, sources, CFLAGS, CXXFLAGS, type in ["dynamic", "both"])
+	objs = make_objects(env.cur.path, sources, CFLAGS, CXXFLAGS, type in ["dynamic", "both"])
 
 	# build static library
 	if type in ["static", "both"]:
@@ -305,7 +305,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL_TO = "", DYN_INSTALL_TO = ""
 		std.ALL.append(lib)
 		std.DISTCLEAN.append(lib)
 		config.register(CONFIG_AR)
-		if INSTALL_TO <> None:
+		if INSTALL_TO != None:
 			lib.INSTALL_TO = INSTALL_TO
 			install.lib(lib)
 
@@ -316,9 +316,9 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL_TO = "", DYN_INSTALL_TO = ""
 		lib.ADDED_LDFLAGS = "-shared"
 		if LDFLAGS:
 			lib.LDFLAGS = LDFLAGS
-		if lib.BUILD_MODE <> "":
+		if lib.BUILD_MODE != "":
 			f = lib["LDFLAGS_%s" % lib.BUILD_MODE]
-			if f <> None:
+			if f != None:
 				lib.ADDED_LDFLAGS = "%s %s" % (lib.ADDED_LDFLAGS, f)
 		if LIBS:
 			post_inits.append(LibSolver(prog, LIBS))
@@ -331,7 +331,7 @@ LDFLAGS =  None, LIBS = None, RPATH = None, INSTALL_TO = "", DYN_INSTALL_TO = ""
 			config.register(CONFIG_CXX)
 		else:
 			config.register(CONFIG_CC)
-		if DYN_INSTALL_TO <> None:
+		if DYN_INSTALL_TO != None:
 			lib.DYN_INSTALL_TO = DYN_INSTALL_TO
 			install.dlib(lib)
 

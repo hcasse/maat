@@ -16,25 +16,26 @@
 
 """Implements command line services of ElfMake."""
 
-import common
-import env
-import io
-import lowlevel
 import os.path
-import recipe
 import sys
+
+from maat import common
+from maat import env
+from maat import io
+from maat import lowlevel
+from maat import recipe
 
 def list_goals(ctx = io.Context()):
 	"""List goals."""
 
 	l = [f for f in recipe.file_db.values() if f.is_goal and not f.is_hidden]
 	if l:
-		l = sorted(l, key = lambda f: f.name)
+		l.sort(key = lambda f: str(f))
 		ll = max([len(str(f)) for f in l])
 		for f in l:
 			desc = f.get_here("DESCRIPTION")
 			if desc:
-				ctx.print_def(str(f) + " " * (ll - len(f.name) + 1), desc)
+				ctx.print_def(str(f) + " " * (ll - len(str(f)) + 1), desc)
 			else:
 				ctx.print_info(str(f))
 
@@ -69,7 +70,7 @@ def embed():
 	ms = []
 	for m in sys.modules.values():
 		try:
-			if m <> None:
+			if m != None:
 				if m.__name__ == "maat":
 					tm = m
 					ms.append(m)

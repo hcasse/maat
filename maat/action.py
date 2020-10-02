@@ -17,17 +17,18 @@
 """Represents the action that may be performed to build
 the recipes."""
 
-import common
-import env
-import io
-import lowlevel
 import os
 import re
-import recipe
 import select
 import shutil
 import subprocess
 import sys
+
+from maat import common
+from maat import env
+from maat import io
+from maat import lowlevel
+from maat import recipe
 
 
 def make_line(args):
@@ -47,33 +48,48 @@ def invoke(cmd, ctx, out = None, err = None):
 	"""Launch the given command in the current shell."""
 	if  cmd == "None":
 		cmd()
-	if out == None:
-		out = ctx.out
-	if err == None:
-		err = ctx.err
 
 	# print command
 	line = make_line(cmd)
 	ctx.print_command(line)
 	
-	# prepare process
-	proc = subprocess.Popen(line, shell=True, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+	# prepare streams
+	ins = []
+	if out == False:
+		out_arg = subprocess.DEVNULL
+	elif out == None:
+		out_arg = subprocess.PIPE
+	else:
+		out_arg = out
+	if err == False:
+		err_arg = subprocess.DEVNULL
+	elif err == None:
+		err_arg = subprocess.PIPE
+	else:
+		err_arg = err
+
+	# run the process
+	proc = subprocess.Popen(line, shell=True, stdout = out_arg, stderr = err_arg)
 	
-	# prepare handling if out, err
-	map = { proc.stdout: out, proc.stderr: err }
-	ins = [proc.stdout, proc.stderr]
+	# manage outputs
+	map = { }
+	if out == None:
+		map[proc.stdout] = ctx.out
+	if err == None:
+		map[proc.stderr] = ctx.err
+	ins = list(map.keys())
 	while ins:
 		useds, x, y = select.select(ins, [], [])
 		for used in useds:
 			line = used.readline()
 			if line:
-				map[used].write(line)
+				map[used].write(line.decode(sys.getdefaultencoding()))
 			else:
 				ins.remove(used)
 	
 	# wait end of called process
 	r = proc.wait()
-	if r <> 0:
+	if r != 0:
 		common.error("build failed")
 
 class StreamCollector:
@@ -131,18 +147,28 @@ class ShellAction(Action):
 	cmd = None
 	quiet = False
 	
-	def __init__(self, cmd, quiet = False):
+	def __init__(self, cmd, quiet = False, no_out = False, no_err = False):
 		if cmd and cmd[0] == "@":
 			quiet = True
 			cmd = cmd[1:]
 		self.cmd = cmd
 		self.quiet = quiet
+		self.no_out = no_out
+		self.no_err = no_err
 
 	def execute(self, ctx):
 		if self.quiet:
 			save = ctx.command_ena
 			ctx.command_ena = False
-		invoke(self.cmd, ctx)
+		if self.no_out:
+			out = False
+		else:
+			out = None
+		if self.no_err:
+			err = False
+		else:
+			err = None
+		invoke(self.cmd, ctx, out = out, err = err)
 		if self.quiet:
 			ctx.command_ena = save
 
@@ -191,7 +217,7 @@ class FunAction(Action):
 		self.fun = fun
 	
 	def execute(self, ctx):
-		self.fun(self.recipe.ress, self.recipe.deps, ctx)
+		self.fun(ctx)
 
 	def commands(self, cmds):
 		cmds.append("<function>")
@@ -284,7 +310,7 @@ class Remove(Action):
 					shutil.rmtree(str(p))
 				else:
 					os.remove(str(p))	
-			except OSError, e:
+			except OSError as e:
 				if not self.ignore_error:
 					common.error(str(e))
 
@@ -314,7 +340,7 @@ class Move(Action):
 		# TODO
 		try:
 			pass
-		except OSError, e:
+		except OSError as e:
 			common.error(str(e))
 		
 	def commands(self, cmds):
@@ -338,7 +364,7 @@ class Invoke(Action):
 	def execute(self, ctx):	
 		try:
 			invoke(self.cmd, ctx)
-		except OSError, e:
+		except OSError as e:
 			common.error(str(e))
 		
 	def commands(self, cmds):
@@ -359,7 +385,10 @@ class Hidden(Action):
 		self.action = action
 	
 	def execute(self, ctx):
+		old_quiet = ctx.quiet
+		ctx.quiet = True
 		self.action.execute(ctx)
+		ctx.quiet = old_quiet
 	
 	def commands(self, cmds):
 		pass

@@ -15,19 +15,19 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Module providing test services."""
-import maat
-import action
-import common
-import env
-import io
-import recipe
-
 import difflib
 import os
 import os.path
 import shutil
 import subprocess
 import sys
+
+import maat
+from maat import action
+from maat import common
+from maat import env
+from maat import io
+from maat import recipe
 
 TEST_CASES = []
 BEFORE_TEST = []
@@ -38,7 +38,7 @@ class Case(recipe.Recipe):
 	name = None
 	tests = None
 	succeeded = 0
-	longer = None
+	longer = 0
 	
 	def __init__(self, name, deps, private):
 		recipe.Recipe.__init__(self, [maat.path(name)], deps)
@@ -155,7 +155,7 @@ class OutputTest(Test):
 			if maat.verbose:
 				ctx.print_info("running '%s'" % cmd)
 			rc = subprocess.call(cmd, stdin = in_stream, stdout = out_stream, stderr = err_stream, shell = True)
-			if rc <> 0:
+			if rc != 0:
 				self.failure(ctx, "return code = %d, command = %s" % (rc, cmd))
 				return
 				
@@ -166,12 +166,21 @@ class OutputTest(Test):
 					maat.mkdir(str(self.out_ref.parent()))
 					shutil.copyfile(str(self.out), str(self.out_ref))
 				else:
-					c = 0
-					for l in difflib.context_diff(open(str(self.out), "r").readlines(), open(str(self.out_ref), "r").readlines()):
-						c += 1
-					if c:
-						self.failure(ctx, "different output stream")
-						return
+					#c = 0
+					#for l in difflib.context_diff(
+					#	open(str(self.out), "r").readlines(),
+					#	open(str(self.out_ref), "r").readlines()
+					#):
+					#	c += 1
+					#if c:
+					#	self.failure(ctx, "different output stream")
+					#	return
+					out = str(self.out)
+					ref = str(self.out_ref)
+					rc = subprocess.call("diff --brief %s %s " % (ref, out), stdout = NULL, stderr = NULL, shell = True)
+					if rc != 0:
+						self.failure(ctx, "different output stream" % (rc, cmd))
+						return					
 			
 			# compare error if any
 			if self.err:
@@ -180,12 +189,18 @@ class OutputTest(Test):
 					maat.mkdir(str(self.err_ref.parent()))
 					shutil.copyfile(str(self.err), str(self.err_ref))
 				else:
-					c = 0
-					for l in difflib.context_diff(open(str(self.err), "r").readlines(), open(str(self.err_ref), "r").readlines()):
-						c += 1
-					if c:
-						self.failure(ctx, "different error stream")
-						return
+					#c = 0
+					#for l in difflib.context_diff(open(str(self.err), "r").readlines(), open(str(self.err_ref), "r").readlines()):
+					#	c += 1
+					#if c:
+					#	self.failure(ctx, "different error stream")
+					#	return
+					err = str(self.err)
+					ref = str(self.err_ref)
+					rc = subprocess.call("diff --brief %s %s" % (ref, err), stdout = NULL, stderr = NULL, shell = True)
+					if rc != 0:
+						self.failure(ctx, "different error stream" % (rc, cmd))
+						return					
 				
 			# display result
 			self.success(ctx)
@@ -202,7 +217,7 @@ class CommandTest(Test):
 	considered as failed."""
 	
 	def __init__(self, case, name, args, out = None, err = None, inp = None, deps = None, dir = None):
-		if dir <> None:
+		if dir != None:
 			deps = common.as_list(deps) + [ dir ]
 		Test.__init__(self, case, name, deps)
 		self.args = args
@@ -216,7 +231,7 @@ class CommandTest(Test):
 	
 	def test(self, ctx):
 		self.perform(ctx)
-		if self.dir <> None:
+		if self.dir != None:
 			old_dir = os.getcwd()
 			try:
 				os.chdir(self.dir)
@@ -246,7 +261,7 @@ class CommandTest(Test):
 			self.success(ctx)
 		else:
 			self.failure(ctx, "return code = %d, command = %s" % (rc, cmd))
-		if self.dir <> None:
+		if self.dir != None:
 			os.chdir(old_dir)
 
 class FailingCommandTest(CommandTest):
@@ -256,7 +271,7 @@ class FailingCommandTest(CommandTest):
 		CommandTest.__init__(self, case, name, args, out, err, inp, deps, dir)
 
 	def check(self, rc):
-		return rc <> 0
+		return rc != 0
 
 
 def case(name, deps = None, private = False):
@@ -283,10 +298,10 @@ def before(*actions):
 
 def post_init():
 	"""Initialize the test goal."""
-	path = env.cenv.path / "test"
-	if not recipe.file_db.has_key(path):
+	path = env.cur.path / "test"
+	if path not in recipe.file_db:
 		before_test = recipe.phony("before-test", [], action.make_actions(BEFORE_TEST))
 		test = maat.goal("test", [before_test] + TEST_CASES)
 		test.DESCRIPTION = "run tests"
 
-maat.post_inits.append(maat.FunDelegate(post_init))
+common.post_inits.append(common.FunDelegate(post_init))

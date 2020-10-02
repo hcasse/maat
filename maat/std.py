@@ -33,15 +33,16 @@ In addition, it is using the following variables from the current environment:
   - BUILD_MODE -- build mode (usual modes are Debug or Release, default Debug)
 """
 
-import maat
-import action
-import common
-import config
-import env
-import install
-import recipe
 import os.path
 import shutil
+
+import maat
+from maat import action
+from maat import common
+from maat import config
+from maat import env
+from maat import install
+from maat import recipe
 
 ALL = []
 """List of targets to build."""
@@ -58,30 +59,30 @@ def install_default_goals():
 	"""Install default goals."""
 	
 	# install all
-	path = env.cenv.path / "all"
-	if not recipe.file_db.has_key(path):
+	path = env.cur.path / "all"
+	if path not in recipe.file_db:
 		g = maat.goal("all", ALL)
 		g.DESCRIPTION = "build all"
 
 	# install clean
-	path = env.cenv.path / "clean"
-	if not recipe.file_db.has_key(path):
+	path = env.cur.path / "clean"
+	if path not in recipe.file_db:
 		g = maat.goal("clean", [], maat.remove(CLEAN, ignore_error = True))
 		g.DESCRIPTION = "remove produced files"
 
 	# install distclean
-	path = env.cenv.path / "distclean"
-	if not recipe.file_db.has_key(path):
+	path = env.cur.path / "distclean"
+	if path not in recipe.file_db:
 		g = maat.goal("distclean", ["clean"], maat.remove(DISTCLEAN, ignore_error = True))
 		g.DESCRIPTION = "remove produced files and configuration files"
 
 	# install install
-	if not recipe.file_db.has_key(env.top.path / "install"):
+	if env.top.path / "install" not in recipe.file_db:
 		g = maat.goal("install", INSTALL)
 		g.DESCRIPTION = "perform installation of the sofware"
 	
 	# dist install
-	if not recipe.file_db.has_key(env.top.path / "dist"):
+	if env.top.path / "dist" not in recipe.file_db:
 		recipe.hidden("setup-dist", [], install.SetupDist())
 		g = maat.goal("dist", ["setup-dist", "install"])
 		g.DESCRIPTION = "build a binary distribution"
