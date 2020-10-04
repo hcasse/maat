@@ -83,6 +83,10 @@ class Test(recipe.Recipe):
 		self.ress[0].set_goal()
 		self.ress[0].DESCRIPTION = "test"
 
+	def action(self, ctx):
+		"""Default action for a test."""
+		self.test(ctx)
+
 	def success(self, ctx):
 		"""Record the current test as a success and display
 		ok message."""
@@ -105,9 +109,6 @@ class Test(recipe.Recipe):
 		"""This method is called to perform the test."""
 		pass
 	
-	def action(self, ctx):
-		pass
-
 
 class OutputTest(Test):
 	"""Test launching a command, storing the output and/or error
@@ -129,10 +130,9 @@ class OutputTest(Test):
 		self.err = maat.path(err)
 		self.err_ref = maat.path(err_ref)
 		self.input = input
-	
+
 	def test(self, ctx):
 		self.perform(ctx)
-		#displayed = True
 		
 		try:
 			
@@ -166,20 +166,11 @@ class OutputTest(Test):
 					maat.mkdir(str(self.out_ref.parent()))
 					shutil.copyfile(str(self.out), str(self.out_ref))
 				else:
-					#c = 0
-					#for l in difflib.context_diff(
-					#	open(str(self.out), "r").readlines(),
-					#	open(str(self.out_ref), "r").readlines()
-					#):
-					#	c += 1
-					#if c:
-					#	self.failure(ctx, "different output stream")
-					#	return
 					out = str(self.out)
 					ref = str(self.out_ref)
 					rc = subprocess.call("diff --brief %s %s " % (ref, out), stdout = NULL, stderr = NULL, shell = True)
 					if rc != 0:
-						self.failure(ctx, "different output stream" % (rc, cmd))
+						self.failure(ctx, "different output stream")
 						return					
 			
 			# compare error if any
@@ -189,17 +180,11 @@ class OutputTest(Test):
 					maat.mkdir(str(self.err_ref.parent()))
 					shutil.copyfile(str(self.err), str(self.err_ref))
 				else:
-					#c = 0
-					#for l in difflib.context_diff(open(str(self.err), "r").readlines(), open(str(self.err_ref), "r").readlines()):
-					#	c += 1
-					#if c:
-					#	self.failure(ctx, "different error stream")
-					#	return
 					err = str(self.err)
 					ref = str(self.err_ref)
 					rc = subprocess.call("diff --brief %s %s" % (ref, err), stdout = NULL, stderr = NULL, shell = True)
 					if rc != 0:
-						self.failure(ctx, "different error stream" % (rc, cmd))
+						self.failure(ctx, "different error stream")
 						return					
 				
 			# display result
